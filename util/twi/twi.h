@@ -14,6 +14,7 @@
 #pragma once
 
 #include <util/twi.h>
+#include <stdio.h>
 
 #define SCL_CLOCK 100000L
 
@@ -24,6 +25,7 @@ static inline uint8_t twi_status()
 
 void twi_init();
 uint8_t twi_start();
+uint8_t twi_start_slave(uint8_t slave_addr);
 uint8_t twi_write(uint8_t data);
 void twi_mt_start(uint8_t slave_addr);
 void twi_mr_start(uint8_t slave_addr);
