@@ -23,14 +23,6 @@ user_softap_init(void)
 	}
 
 	user_softap_setup_config(); 
-
-    //os_printf("Wifi mode: %d,  %d \n", wifi_get_opmode(), (int) wifi_get_phy_mode());
-
-
-
-    //char DeviceBuffer[40] = {0};
-
-
 }
 
 void ICACHE_FLASH_ATTR 

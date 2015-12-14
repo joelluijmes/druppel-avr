@@ -23,7 +23,7 @@ EXTRA_INCDIR	= include
 
 # libraries used in this project, mainly provided by the SDK
 #LIBS		= c gcc hal phy net80211 lwip wpa main smartconfig
-LIBS		= c gcc hal phy pp net80211 lwip wpa main  crypto
+LIBS		= c gcc hal phy pp net80211 lwip wpa main crypto
 #upgrade upgrade_ssl
 
 # compiler flags using during compilation of source files
