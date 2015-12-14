@@ -1,71 +1,95 @@
 #include "twi.h"
 
-void twi_init()
+#define WAIT() do { } while ((TWCR & (1 << TWINT)) == 0)
+#define STATUS() (TWSR & 0xF8) 
+
+typedef uint8_t BOOL;
+
+static void init_clock()
 {
-	TWSR = 0x00;										//No prescaler
-	TWBR = ((F_CPU/SCL_CLOCK) - 16) >> 1;				//freq SCL = ((F_CPU/SCL_CLOCK) - 16) / 2
-	//TWCR = 1 << TWEN | 1 << TWIE | 1 << TWEA;			//Enables | Acknowledges
+	TWSR = 0x00;										// No prescaler
+	TWBR = ((F_CPU/SCL_CLOCK) - 16) >> 1;				// freq SCL = ((F_CPU/SCL_CLOCK) - 16) / 2
 }
 
-uint8_t twi_start()
+static BOOL start_master()
 {
-	TWCR = 1 << TWINT | 1 << TWSTA | 1 << TWEN;		//Enables TW_interrupt | Start bit | TWI_Enable
-	while ((TWCR & (1 << TWINT)) == 0);
+	// The devices tries to become master by checking if the bus is free. Then it sends a START condition
+	// to claim the bus, if its not free it waits until a STOP condition is issued.
+	// Writing 1 to TWINT clears the flag, the TWI will not start as long the TWINT is set.
+	TWCR = 1 << TWINT | 1 << TWSTA | 1 << TWEN;			// Clears INT | Start bit | Enable TWI
+	WAIT();
 
-	return twi_status();
+	uint8_t status = STATUS();
+	return !!(status == TW_START || status == TW_REP_START);	// true if we got hold of the bus
 }
 
-uint8_t twi_start_slave(uint8_t slave_addr)
+void twi_master_init()
 {
-	TWAR = slave_addr << 1;
-	TWCR = 1 << TWINT | 1 << TWEA | 1 << TWEN;
-
-	while ((TWCR & (1 << TWINT)) == 0) ;
-	return twi_status();
+	init_clock();
 }
 
-uint8_t twi_write(uint8_t data)
+void twi_slave_init(uint8_t slave_addr)
 {
-	TWDR = data;
-	TWCR = 1 << TWINT | 1 << TWEN;
-	while ((TWCR & (1 << TWINT)) == 0) puts(".");			//Waits for completion
-
-	return twi_status();
+	init_clock();
+	
+	// Enable acknowledge makes the slave ack when it receives its slave address or when a general
+	// call has been received (not enabled tho)
+	TWCR =  1<< TWINT |1 << TWEA | 1 << TWEN;			// Clears INT | Enable Acknowledge | ENable TWI
+	TWAR = slave_addr << 1;								// set its slave address
+	WAIT();				
 }
 
-void twi_mt_start(uint8_t slave_addr)
+void twi_write(uint8_t data)
 {
-	uint8_t status;
-	while ((status = twi_write((slave_addr << 1) | TW_WRITE)) != TW_MT_SLA_ACK)
-	{
-		printf("%x", twi_status());
-		twi_start();
-	}
+	TWDR = data;										// set the data to transmit
+	TWCR = 1 << TWINT | 1 << TWEN;						// starts operation
+	WAIT();				
 }
 
-void twi_mr_start(uint8_t slave_addr)
+TWRESULT twi_mt_start(uint8_t slave_addr)
 {
-	uint8_t status;
-	while ((status = twi_write((slave_addr << 1) | TW_READ)) != TW_MR_SLA_ACK)
-		twi_start();
+	if (!start_master())								// if we can't get hold of the bus
+		return TWST_START_FAILED;						// we exit
+	
+	twi_write((slave_addr << 1) | TW_WRITE);			// say we're going to write to slave
+	WAIT();
+
+	return (STATUS() == TW_MT_SLA_ACK)					// depending on we get an ack of the slave
+		? TWST_OK
+		: TWST_MT_ACK_EXPECTED;							// FAILED
+}
+
+TWRESULT twi_mr_start(uint8_t slave_addr)
+{
+	if (!start_master())								// if we can't get hold of the bus
+		return TWST_START_FAILED;						// we exit
+	
+	twi_write((slave_addr << 1) | TW_READ);				// say we're expect something of the slave
+	WAIT();
+
+	return (STATUS() == TW_MR_SLA_ACK)					// depending on we get an ack of the slave
+		? TWST_OK
+		: TWST_MT_ACK_EXPECTED;							// FAILED
 }
 
 void twi_stop()
 {
-	TWCR = 1 << TWINT | 1 << TWSTO | 1 << TWEN;		
-	while ((TWCR & (1 << TWSTO)) == 0) ;
+	TWCR = 1 << TWINT | 1 << TWSTO | 1 << TWEN;			// Releases the bus
+	WAIT();
 }
 
 uint8_t twi_read()
 {
-	TWCR = 1 << TWINT | 1 << TWEA | 1 << TWEN;		//Sends ack after reading
-	while ((TWCR & (1 << TWINT)) == 0) ;
-	return TWDR;
+	TWCR = 1 << TWINT | 1 << TWEA | 1 << TWEN;			// Enables TWI | Send ACK after op
+	WAIT();
+
+	return TWDR;										// Returns data
 }
 
 uint8_t twi_peek()
 {
-	TWCR = 1 << TWINT | 1 << TWEN;					//Don't send ack after reading
-	while ((TWCR & (1 << TWINT)) == 0) ;
+	TWCR = 1 << TWINT | 1 << TWEN;						// Enables TWI (Note: we don't send ack after op, thus nack)
+	WAIT();
+
 	return TWDR;
 }
