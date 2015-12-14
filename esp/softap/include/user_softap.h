@@ -6,5 +6,6 @@
 
 void user_softap_init(void); 
 void user_softap_setup_config(void); 
+void user_softap_ipinfo(void);
 
 #endif
