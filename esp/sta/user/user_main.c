@@ -10,10 +10,12 @@
 *******************************************************************************/
 
 #include "osapi.h"
+#include "user_sta.h"
+#include "user_tcpclient.h"
 #include "user_interface.h"
+
 #include "espconn.h"
 #include "mem.h"
-#include "user_sta.h"
 
 static char hwaddr[6];
 #define MACSTR "%02x:%02x:%02x:%02x:%02x:%02x"
@@ -39,6 +41,7 @@ LOCAL void event_cb(System_Event_t *event) {
         os_printf("Event: EVENT_STAMODE_AUTHMODE_CHANGE\n");
     case EVENT_STAMODE_GOT_IP:
         os_printf("Event: EVENT_STAMODE_GOT_IP\n");
+        user_tcpclient_init(); 
         break;
     default:
         os_printf("Unexpected event: %d\n", event->event);

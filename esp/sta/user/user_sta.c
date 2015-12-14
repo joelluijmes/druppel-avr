@@ -38,8 +38,10 @@ user_sta_setup_config(void)
 
 	os_memset(config.ssid, 0, 32);
 	os_memset(config.password, 0, 64);
-	strncpy(config.ssid, SSID, strlen(SSID));
-	strncpy(config.password, WIFI_KEY, strlen(WIFI_KEY));
+	os_memcpy(config.ssid, SSID, strlen(SSID));
+	os_memcpy(config.password, WIFI_KEY, strlen(WIFI_KEY));
+	//strncpy
+
 	config.bssid_set = 0; 
 	wifi_station_set_config(&config);
 }
