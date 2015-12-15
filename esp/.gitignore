@@ -1,2 +1,4 @@
-build/
-firmware/
+softap/build
+softap/firmware
+sta/build
+sta/firmware
