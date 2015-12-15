@@ -289,6 +289,8 @@ uart_recvTask(os_event_t *events)
         uint8 fifo_len = (READ_PERI_REG(UART_STATUS(UART0))>>UART_RXFIFO_CNT_S)&UART_RXFIFO_CNT;
         uint8 d_tmp = 0;
         uint8 idx=0;
+        //TODO: remove
+        os_printf("okokok\n");
         for(idx=0;idx<fifo_len;idx++) {
             d_tmp = READ_PERI_REG(UART_FIFO(UART0)) & 0xFF;
             uart_tx_one_char(UART0, d_tmp);
