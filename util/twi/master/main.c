@@ -16,7 +16,7 @@ int main()
 	PORTC = 1 << 4 | 1 << 5;
 	PORTB = 0x20;
 
-	twi_init();
+	twi_master_init();
 
 	uint8_t something = 1;
 	uint8_t slave = 0xAB;
@@ -24,21 +24,11 @@ int main()
 
 	while (1)
 	{
-		do 
-		{
-			status = twi_start() & 0xF8;
-			printf("start: %x\n", status);
-		 	PORTB = 0x20; 	// error
-		} while (status != TW_START && status != TW_REP_START);
+		if (twi_mt_start(slave) != TWST_OK)
+			continue;
 
-		twi_mt_start(slave);
-		printf("mt_start: %x\n", twi_status());
 		twi_write(something);
-		printf("write: %x\n", twi_status());
-
 		twi_stop();
-		printf("stop: %x\n", twi_status());
-
 
 		_delay_ms(1000);
 	}

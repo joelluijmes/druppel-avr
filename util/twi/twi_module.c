@@ -1,7 +1,6 @@
 #include "twi.h"
 
 #define WAIT() do { } while ((TWCR & (1 << TWINT)) == 0)
-#define STATUS() (TWSR & 0xF8) 
 
 typedef uint8_t BOOL;
 
@@ -19,8 +18,7 @@ static BOOL start_master()
 	TWCR = 1 << TWINT | 1 << TWSTA | 1 << TWEN;			// Clears INT | Start bit | Enable TWI
 	WAIT();
 
-	uint8_t status = STATUS();
-	return !!(status == TW_START || status == TW_REP_START);	// true if we got hold of the bus
+	return !!(TW_STATUS == TW_START || TW_STATUS == TW_REP_START);	// true if we got hold of the bus
 }
 
 void twi_master_init()
@@ -54,7 +52,7 @@ TWRESULT twi_mt_start(uint8_t slave_addr)
 	twi_write((slave_addr << 1) | TW_WRITE);			// say we're going to write to slave
 	WAIT();
 
-	return (STATUS() == TW_MT_SLA_ACK)					// depending on we get an ack of the slave
+	return (TW_STATUS == TW_MT_SLA_ACK)					// depending on we get an ack of the slave
 		? TWST_OK
 		: TWST_MT_ACK_EXPECTED;							// FAILED
 }
@@ -67,7 +65,7 @@ TWRESULT twi_mr_start(uint8_t slave_addr)
 	twi_write((slave_addr << 1) | TW_READ);				// say we're expect something of the slave
 	WAIT();
 
-	return (STATUS() == TW_MR_SLA_ACK)					// depending on we get an ack of the slave
+	return (TW_STATUS == TW_MR_SLA_ACK)					// depending on we get an ack of the slave
 		? TWST_OK
 		: TWST_MT_ACK_EXPECTED;							// FAILED
 }
