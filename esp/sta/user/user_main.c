@@ -10,9 +10,13 @@
 *******************************************************************************/
 
 #include "osapi.h"
+#include "user_uart.h"
 #include "user_sta.h"
 #include "user_tcpclient.h"
 #include "user_interface.h"
+
+
+#include "driver/uart.h"
 
 #include "espconn.h"
 #include "mem.h"
@@ -24,7 +28,7 @@ static char hwaddr[6];
 static void ICACHE_FLASH_ATTR 
 init_done_cb() {
 
-    wifi_station_connect();
+    //wifi_station_connect();
 
     os_printf("autoconnect: %d ", wifi_station_get_auto_connect());
 }
@@ -57,11 +61,15 @@ void user_rf_pre_init(void)
 
 void user_init(void)
 {
-    uart_div_modify(0, UART_CLK_FREQ / 115200);     // Enable dev stream to uart 0 
+
+    uart_init(BIT_RATE_115200, BIT_RATE_115200);
+    uart_div_modify(1, UART_CLK_FREQ / 115200);     // Enable dev stream to uart 0 
     os_printf("\r\nUser init...\n"); 
 
     // ESP8266 station mode init.
     user_sta_init();
+
+    user_uart_init(); 
 
     system_init_done_cb(init_done_cb);
     wifi_set_event_handler_cb(event_cb);
