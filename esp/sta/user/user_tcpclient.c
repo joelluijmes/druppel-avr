@@ -33,7 +33,10 @@ tcpclient_recv_cb(void *arg, char *data, unsigned short length)
 void ICACHE_FLASH_ATTR
 tcpclient_sent_cb(void *arg)
 {
+    struct espconn *pespconn = arg;
     os_printf("Data is sent! \r\n");
+
+    espconn_disconnect(pespconn);
 }
 
 void ICACHE_FLASH_ATTR
@@ -41,15 +44,22 @@ tcpclient_discon_cb(void *arg)
 {
 	// Memory freed automaticaly
 	os_printf("TCP disconnect succeed\n");
+
+    system_soft_wdt_restart(); 
+    os_delay_us(2000*1000); 
+    system_soft_wdt_feed(); 
+    user_tcpclient_init(); 
 }
 
 void ICACHE_FLASH_ATTR
-tcpclient_sent_data(struct espconn *pespconn)
+tcpclient_sent_data(struct espconn *pespconn, uint8 *sent)
 {
+
+sint8 espconn_sent(struct espconn *espconn, uint8 *psent, uint16 length);
 	char *pbuf = (char *)os_zalloc(packet_size);
 
-	char buffer[] = "GET / HTTP/1.1\r\nUser-Agent: curl/7.37.0\r\nHost: %s\r\nAccept: */*\r\n\r\n"; 
-	os_sprintf(pbuf, buffer, "cn.bing.com");
+	char buffer[] = "ready"; 
+	os_sprintf(pbuf, buffer);
 
 	espconn_sent(pespconn, pbuf, os_strlen(pbuf));
 

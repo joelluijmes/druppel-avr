@@ -28,13 +28,15 @@ void ICACHE_FLASH_ATTR init_done_cb() {
 
 void user_rf_pre_init(void) 
 {
-
+    //Full RF calibration... take 200ms
+    system_phy_set_powerup_option(3);
 }
 
 void user_init(void)
 {
     uart_div_modify(0, UART_CLK_FREQ / 115200);     // Enable dev stream to uart 0 
     os_printf("\r\nUser init...\n"); 
+
 
     // ESP8266 softAP set config.
     user_softap_init(); 
