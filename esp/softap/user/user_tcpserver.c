@@ -26,6 +26,14 @@ tcpserver_recv_cb(void *arg, char *data, unsigned short length)
 	os_printf("%s \n", data);
 	// char pusrdata[] = "Please test this";
 	// espconn_sent(pespconn, pusrdata, strlen(pusrdata));
+
+    if(length == 2 && strcmp("AR", data) == 0) 
+    {
+        // Receive AR so send OK back
+        // TODO send data to supertiny to check if receive data is allowed...
+        char buffer[] = "OK";
+        espconn_sent(pespconn, buffer, os_strlen(buffer));
+    }
 }
 
 void ICACHE_FLASH_ATTR

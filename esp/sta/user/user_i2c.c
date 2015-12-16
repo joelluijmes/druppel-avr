@@ -156,7 +156,7 @@ user_ds1307_read(RTC *time)
 void ICACHE_FLASH_ATTR 
 user_i2c_init(void)
 {
-	os_printf("I2C user init\n ");
+	os_printf("I2C user init\n");
 
 
 	i2c_master_gpio_init(); 
@@ -164,10 +164,13 @@ user_i2c_init(void)
     struct DS1307 time; 
 
 
+    user_ds1307_read(&time);
+    user_ds1307_print(&time); 
+
     //system_soft_wdt_stop();
     //uint8 i = 0;
     //for(i = 0; i < 10; i++) 
-    while(true)
+    while(0)
     {
         os_delay_us(2000*1000); 
         os_printf("Reading values.. \n"); 	

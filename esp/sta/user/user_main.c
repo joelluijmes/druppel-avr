@@ -51,9 +51,9 @@ init_done_cb() {
 
 
     // Wifi connect to ap
-    // os_delay_us(3000*1000); 
-    // wifi_station_disconnect(); 
-    // wifi_station_connect();
+    os_delay_us(3000*1000); 
+    wifi_station_disconnect(); 
+    wifi_station_connect();
 
     os_printf("autoconnect: %d ", wifi_station_get_auto_connect());
 }
