@@ -24,8 +24,19 @@ tcpserver_recv_cb(void *arg, char *data, unsigned short length)
 	// Received some data from tcp connection 
 	os_printf("TCP recv data length: %d \r\n", length);
 	os_printf("%s \n", data);
-	// char pusrdata[] = "Please test this";
-	// espconn_sent(pespconn, pusrdata, strlen(pusrdata));
+
+    if(length == 2 && strcmp("AR", data) == 0) 
+    {
+        // Receive AR so send OK back
+        // TODO send data to supertiny (at receive board) to check if receive data is allowed...
+        char buffer[] = "OK";
+        espconn_sent(pespconn, buffer, os_strlen(buffer));
+    } else 
+    {
+        // Received data wich is probably right 
+        // TODO check data
+        uart0_sendStr(data); 
+    }
 }
 
 void ICACHE_FLASH_ATTR

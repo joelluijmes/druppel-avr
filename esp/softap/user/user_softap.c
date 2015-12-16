@@ -33,11 +33,15 @@ user_softap_setup_config(void)
 {
 	// Build our Access Point configuration details
 	struct softap_config config;
+	wifi_softap_get_config(&config); // Get config first.
+
+	os_memset(config.ssid, 0, 32);
+	os_memset(config.password, 0, 64);
 
 	os_strcpy(config.ssid, SSID, strlen(SSID));
 	os_strcpy(config.password, WIFI_KEY, strlen(WIFI_KEY));
 	config.ssid_len = 0;
-	config.channel = 6;
+	config.channel = 11;
     //config.authmode = AUTH_WPA_WPA2_PSK; // Secure auth mode isn't yet working
 	config.authmode = AUTH_OPEN;
 	config.ssid_hidden = 0;

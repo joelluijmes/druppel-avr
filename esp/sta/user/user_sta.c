@@ -7,6 +7,12 @@
  * Modification history:
  *     2015/12/12, v1.0 create this file.
 *******************************************************************************/
+ /*
+ wi-fi association expired
+ 802.11 disassociation: previous authentication expired - 
+ A client that is attempting to join the service set identifier (SSID) is incorrectly entering the pre-shared key (PSK), 
+ or a client left the BSSID without sending a deauthentication frame (could be from a client shutting down or leaving the AP)
+ */ 
 
 #include "osapi.h"
 #include "user_interface.h"
@@ -38,8 +44,9 @@ user_sta_setup_config(void)
 
 	os_memset(config.ssid, 0, 32);
 	os_memset(config.password, 0, 64);
-	os_memcpy(config.ssid, SSID, strlen(SSID));
-	os_memcpy(config.password, WIFI_KEY, strlen(WIFI_KEY));
+	char SSI[32] = "DRUPPEL";
+	os_memcpy(config.ssid, SSI, strlen(SSI));
+	//os_memcpy(config.password, WIFI_KEY, strlen(WIFI_KEY));
 	//strncpy
 
 	config.bssid_set = 0; 
