@@ -80,8 +80,8 @@ tcpclient_discon_cb(void *arg)
     os_delay_us(2500*1000); 
     system_soft_wdt_restart(); 
     os_delay_us(2500*1000); 
-    system_soft_wdt_restart(); 
-    os_delay_us(2500*1000); 
+    // system_soft_wdt_restart(); 
+    // os_delay_us(2500*1000); 
     // system_soft_wdt_restart(); 
 
     system_soft_wdt_feed(); 

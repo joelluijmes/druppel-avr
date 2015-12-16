@@ -29,9 +29,12 @@ struct DS1307 {
 typedef struct DS1307 RTC;
 
 
-void user_i2c_init(void);
 void user_i2c_test(void); 
+uint8_t bcd2dec(uint8_t num);
+
 void user_ds1307_print(RTC *time); 
 void user_ds1307_read(RTC *time);
+
+void user_i2c_init(void);
 
 #endif

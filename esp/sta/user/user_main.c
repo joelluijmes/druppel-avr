@@ -44,6 +44,7 @@ static char hwaddr[6];
 #define MACSTR "%02x:%02x:%02x:%02x:%02x:%02x"
 #define MAC2STR(a) (a)[0], (a)[1], (a)[2], (a)[3], (a)[4], (a)[5]
 
+
 static void ICACHE_FLASH_ATTR 
 init_done_cb() {
 
@@ -94,20 +95,12 @@ void user_init(void)
     uart_div_modify(0, UART_CLK_FREQ / 115200);     // Enable dev stream to uart 0 
     os_printf("\r\nUser init...\n"); 
 
-    // //Full RF calibration... take 200ms
-    // system_phy_set_powerup_option(3);
-    // os_printf("RF calibration done\n"); 
-
     // ESP8266 station mode init.
     user_sta_init();
 
-    //system_phy_set_powerup_option(3); 
 
     //user_uart_init(); 
-
     //gpio_init(); 
-
-
 
     system_init_done_cb(init_done_cb);
     wifi_set_event_handler_cb(event_cb);
