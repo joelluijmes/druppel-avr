@@ -24,6 +24,7 @@ int main()
 
 	while (1)
 	{
+		_delay_ms(1000);
 		if (twi_mt_start(slave) != TWST_OK)
 			continue;
 
