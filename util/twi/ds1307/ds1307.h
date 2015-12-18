@@ -1,6 +1,7 @@
 #pragma once
 
 #define DS1307_CTRL_ID 0x68
+#define SECONDS_FROM_1970_TO_2000 946684800
 
 struct DS1307 {
 	uint8_t second; 
