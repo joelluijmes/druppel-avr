@@ -2,13 +2,16 @@
 #include <util/delay.h>
 #include <avr/interrupt.h>
 
-#include "../twi.h"
-#include "../../uart/uart.h"
+#include "twi.h"
+#include "uart.h"
+
+#include "bmp180.h"
+
 
 FILE mystdout = FDEV_SETUP_STREAM(uart_putchar, NULL, _FDEV_SETUP_WRITE);
 
 void start_measure(uint8_t slave) 
-{
+{ 
 	_delay_ms(2000);
 	printf("Starting\n");
 	if (twi_mt_start(slave) != TWST_OK)
@@ -60,7 +63,16 @@ int main()
 	uint8_t slave = 0x77;
 	uint8_t status;
 
-	start_measure(slave); 
+
+	while(1) 
+	{
+		start_measure(slave); 
+		//read_unix_time(); 
+		read_temperature(); 
+		printf("tests\n");
+		_delay_ms(2000);
+	}
+
 
 	while (1)
 	{
