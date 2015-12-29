@@ -10,41 +10,20 @@
 
 FILE mystdout = FDEV_SETUP_STREAM(uart_putchar, NULL, _FDEV_SETUP_WRITE);
 
-void start_measure(uint8_t slave) 
-{ 
-	_delay_ms(2000);
-	printf("Starting\n");
-	if (twi_mt_start(slave) != TWST_OK)
-		return; 
+/*
 
-	printf("1\n");
+provided altitude: 1655 meters, 5430 feet
+temperature: 22.16 deg C, 71.89 deg F
+absolute pressure: 1026.23 mb, 30.31 inHg
+relative (sea-level) pressure: 1253.37 mb, 37.02 inHg
+computed altitude: 1655 meters, 5430 feet
 
-	twi_write(0xF4); // Control register value; 
-
-
-	twi_write(0x2E); 
-
-	twi_stop(); 
-	// return; 
-
-	// printf("2\n");
-
-	// if(twi_mr_start(slave) != TWST_OK)
-	// 	continue;
-	// printf("3\n");
-
-	// uint8_t value_msb  = twi_read();
-	// printf("4\n");
-
-	// uint8_t value_lsb = twi_peek(); 
-	// printf("5\n");
-
-
-	// printf("%d: %d\n", value_msb, value_lsb);
-
-
-	// twi_stop();
-}
+provided altitude: 1655 meters, 5430 feet
+temperature: 22.15 deg C, 71.87 deg F
+absolute pressure: 1026.19 mb, 30.31 inHg
+relative (sea-level) pressure: 1253.32 mb, 37.01 inHg
+computed altitude: 1655 meters, 5430 feet
+*/ 
 
 int main()
 {
@@ -59,58 +38,11 @@ int main()
 
 	twi_master_init();
 
-	uint8_t something = 1;
-	uint8_t slave = 0x77;
-	uint8_t status;
-
-
 	while(1) 
 	{
-		start_measure(slave); 
-		//read_unix_time(); 
-		read_temperature(); 
-		printf("tests\n");
+		//read_temperature(); 
+		read_presure(); 
+		printf("\n");
 		_delay_ms(2000);
-	}
-
-
-	while (1)
-	{
-		_delay_ms(2000);
-		printf("Starting\n");
-		if (twi_mt_start(slave) != TWST_OK)
-			continue;
-
-		printf("1\n");
-
-		twi_write(0xF6); // Temperature; 
-		printf("2\n");
-		
-		if(twi_mr_start(slave) != TWST_OK)
-			continue;
-		printf("3\n");
-
-		uint8_t value_msb  = twi_read();
-		printf("4\n");
-
-		uint8_t value_lsb = twi_peek(); 
-		printf("5\n");
-
-
-		uint16_t UT = value_msb << 8 | value_lsb; 
-
-		uint16_t T = (value_msb << 8 ) + value_lsb; 
-		printf("%d: %d: %d : %d\n", value_msb, value_lsb, UT, T);
-
-
-		twi_stop();
-
-
-		printf("ok\n");
-
-		//twi_write(something);
-		//twi_stop();
-
-		_delay_ms(1000);
 	}
 }

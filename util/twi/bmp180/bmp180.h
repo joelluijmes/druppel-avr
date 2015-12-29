@@ -2,6 +2,11 @@
 #define __BMP180_H__
 
 #define BMP180_CTRL_ID 0x77
+#define	BMP180_ADDRESS_TEMPERATURE 0x2E
+#define	BMP180_ADDRESS_PRESSURE0 0x34
+#define	BMP180_ADDRESS_PRESSURE1 0x74
+#define	BMP180_ADDRESS_PRESSURE2 0xB4
+#define	BMP180_ADDRESS_PRESSURE3 0xF4
 
 struct CALIBRATION {
 	uint8_t chipid; 	// 0x55
@@ -19,6 +24,7 @@ struct CALIBRATION {
 };
 typedef struct CALIBRATION CALIBRATION;
 
-void read_temperature();
+double read_temperature();
+double read_presure();
 
 #endif
