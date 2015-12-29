@@ -4,6 +4,7 @@
 #define BMP180_CTRL_ID 0x77
 
 struct CALIBRATION {
+	uint8_t chipid; 	// 0x55
 	int16_t AC1;		// 7448
 	int16_t AC2;		// -1063
 	int16_t AC3;		// -14398
@@ -18,7 +19,6 @@ struct CALIBRATION {
 };
 typedef struct CALIBRATION CALIBRATION;
 
-void read_unix_time();
 void read_temperature();
 
 #endif
