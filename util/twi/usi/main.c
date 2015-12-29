@@ -1,24 +1,21 @@
 #include <util/delay.h>
 #include <avr/io.h>
 
-#define DDR_USI DDRB
-	#define PORT_USI PORTB
-	#define PIN_USI PINB
-	#define MASK_SDA 1 << PB0
-	#define MASK_SCK 1 << PB2
+#include "twi_usi.h"
 
 int main()
 {
-	USISR = 1 << USISIF | 1 << USIOIF | 1 << USIOIF;
-	USICR = 1 << USIWM1 | 1 << USICLK;
+	DDRB = 0x02;
+	PORTB |= 0x02;
 
-	DDRB = 0xFF;
-
+	usi_init_master();
+	
+	usi_init_mt(0x08);
+	
+	
 	while (1)
 	{
-		USICR |= 1 << USITC;
-
-		_delay_ms(2);
+		usi_write(0xFF);
 	}
 
 	return 0;

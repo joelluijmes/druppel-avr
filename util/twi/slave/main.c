@@ -1,17 +1,15 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
-#include "../twi.h"
+#include "../twi_module.h"
 
 int main()
 {
 	sei();
 	DDRB = 0x20;	// ledje
+	twi_slave_init(0x08);
 
-
-	twi_init();
-	twi_start_slave(0xAB);
-
+	PORTB = 0x20;
 	while (1)
 	{
 		uint8_t data = twi_read();
