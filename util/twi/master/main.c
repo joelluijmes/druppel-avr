@@ -17,7 +17,7 @@ int main()
 	uint8_t slave = 0x08;
 
 	_delay_ms(1000);
-	if (twi_mr_start(slave) != TWST_OK)
+	if (twi_mt_start(slave) != TWST_OK)
 		PORTB = 0x20;
 	else 
 		PORTB &= ~0x20;

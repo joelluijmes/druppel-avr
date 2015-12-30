@@ -62,7 +62,7 @@
       (0x0<<USICNT0); /* set USI to shift out 8 bits */ \
     }
 
-void usi_init_slave(uint8_t slave_addr)
+USIRESULT usi_init_slave(uint8_t slave_addr)
 {
 	SCL_LOW();
 	SDA_LOW();
@@ -91,9 +91,11 @@ void usi_init_slave(uint8_t slave_addr)
 	while (USIDR != 0 && (USIDR >> 1) != slave_addr);
 
 	//	if (USIDR & 0x01) transmit mode
+	USIRESULT result = (USIDR & 0x01) ? USI_SLAVE_TRANSMIT : USI_SLAVE_RECEIVE;
 
 	// Send the acknowledgment
 	SET_USI_TO_SEND_ACK();
+	return result;
 }
 
 uint8_t usi_write(uint8_t data)
