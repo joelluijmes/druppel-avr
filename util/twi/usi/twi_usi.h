@@ -44,9 +44,10 @@
   #define T4_TWI    ((SYS_CLK *4000) /1000000) +1 // >4,0us
 #endif
 
-void usi_write(uint8_t data);
+uint8_t usi_write(uint8_t data);
 uint8_t usi_peek();
 uint8_t usi_read();
 void usi_init_master();
 uint8_t usi_init_mt(uint8_t slave_addr);
+void usi_init_slave(uint8_t slave_addr);
 void usi_stop();

@@ -67,7 +67,7 @@ TWRESULT twi_mr_start(uint8_t slave_addr)
 
 	return (TW_STATUS == TW_MR_SLA_ACK)					// depending on we get an ack of the slave
 		? TWST_OK
-		: TWST_MT_ACK_EXPECTED;							// FAILED
+		: TWST_MR_ACK_EXPECTED;							// FAILED
 }
 
 void twi_stop()

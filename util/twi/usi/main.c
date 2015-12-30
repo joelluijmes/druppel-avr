@@ -8,15 +8,10 @@ int main()
 	DDRB = 0x02;
 	PORTB |= 0x02;
 
-	usi_init_master();
-	
-	usi_init_mt(0x08);
-	
-	
-	while (1)
-	{
-		usi_write(0xFF);
-	}
+	usi_init_slave(0x08);
+	PORTB &= ~0x02;
 
+
+	while (1) ;
 	return 0;
 }

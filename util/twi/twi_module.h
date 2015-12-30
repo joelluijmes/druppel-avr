@@ -22,6 +22,7 @@ typedef uint8_t TWRESULT;
 #define TWST_OK	1
 #define TWST_START_FAILED 2
 #define TWST_MT_ACK_EXPECTED 3
+#define TWST_MR_ACK_EXPECTED 4
 
 // Initializes as master
 void twi_master_init();
