@@ -64,51 +64,43 @@
 
 static volatile uint8_t _state, _address;
 
+USIRESULT usi_wait()
+{
+    do   
+    {
+        SET_USI_TO_TWI_START_CONDITION_MODE();
+        while ((USISR & (1 << USISIF)) == 0) ;
+        SDA_INPUT();
+
+        while (IS_SCL_HIGH() && !(SDA_HIGH())) ;
+
+        USICR = (IS_SDA_HIGH())             
+            ? 1 << USISIE | 1 << USIWM1 | 1 << USIWM0 | 1 << USICS1                 // stop condition
+            : 1 << USISIE | 1 << USIOIE | 1 << USIWM1 | 1 << USIWM0 | 1 << USICS1;  // start condition
+
+        USISR = SR_RESET;
+
+        WAIT();
+    } while (USIDR != 0 && (USIDR >> 1) != _address);
+
+    USIRESULT result = (USIDR & 0x01)
+        ? USI_SLAVE_TRANSMIT
+        : USI_SLAVE_RECEIVE;
+
+    SET_USI_TO_SEND_ACK();
+    return result;   
+}
+
 USIRESULT usi_init_slave(uint8_t slave_addr)
 {
-	SCL_HIGH();
-	SDA_HIGH();
-	SCL_OUTPUT();
-	SDA_INPUT();
+    _address = slave_addr;
+    // Not sure what initial values should be used but these seem to work best :D
+    SCL_LOW();
+    SDA_LOW();
+    SCL_INPUT();
+    SDA_INPUT();
 
-	USICR    =  (1<<USISIE)|(0<<USIOIE)|                            // Enable Start Condition Interrupt. Disable Overflow Interrupt.
-              (1<<USIWM1)|(0<<USIWM0)|                            // Set USI in Two-wire mode. No USI Counter overflow prior
-                                                                  // to first Start Condition (potentail failure)
-              (1<<USICS1)|(0<<USICS0)|(0<<USICLK)|                // Shift Register Clock Source = External, positive edge
-              (0<<USITC);
-  	USISR    = 0xF0;                                                // Clear all flags and reset overflow counter
-
-  restart:
-  	while ((USISR & (1 << USISIF)) == 0) ;
-
-  	SDA_INPUT();
-
-  	while (IS_SCL_HIGH() && !(SDA_HIGH())) ;
-
-	USICR = (IS_SDA_HIGH())				
-		? 1 << USISIE | 1 << USIWM1 | 1 << USIWM0 | 1 << USICS1		// stop
-		: 1 << USISIE | 1 << USIOIE | 1 << USIWM1 | 1 << USIWM0 | 1 << USICS1;	// start
-
-    USISR = SR_RESET;
-
-    WAIT();
-
-    USIRESULT result = USI_OK;
-    if (USIDR == 0 || (USIDR >> 1) == slave_addr)
-	{
-		result = (USIDR & 0x01)
-			? USI_SLAVE_TRANSMIT
-			: USI_SLAVE_RECEIVE;
-
-		SET_USI_TO_SEND_ACK();
-	}
-	else
-	{
-		SET_USI_TO_TWI_START_CONDITION_MODE();
-		goto restart;
-	}
-
-	return result;
+    return usi_wait();
 }
 
 uint8_t usi_write(uint8_t data)
@@ -125,7 +117,7 @@ uint8_t usi_write(uint8_t data)
 	if (USIDR)			// nack: stop reading
 	{
 		SET_USI_TO_TWI_START_CONDITION_MODE();
-		// goto: restart
+		// goto: restart??
 	}
 
 	return !!USIDR;

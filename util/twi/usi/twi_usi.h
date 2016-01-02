@@ -23,6 +23,7 @@ typedef uint8_t USIRESULT;
 #define USI_SLAVE_RECEIVE 3
 #define TWST_MR_ACK_EXPECTED 4
 
+USIRESULT usi_wait();
 uint8_t usi_write(uint8_t data);
 uint8_t usi_peek();
 uint8_t usi_read();
