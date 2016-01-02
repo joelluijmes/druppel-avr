@@ -15,7 +15,7 @@
 #include <stdio.h>
 
 // 100 kHz as clock
-#define SCL_CLOCK 100000L
+#define SCL_CLOCK 1000L
 
 // Status codes of what this module will return
 typedef uint8_t TWRESULT;

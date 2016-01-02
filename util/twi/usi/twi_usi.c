@@ -30,7 +30,7 @@
 #define SET_USI_TO_SEND_ACK() {  \
     USIDR = 0; /* Prepare ACK */ \
 	SDA_OUTPUT(); /* Set SDA as output*/ \
-    USISR = (0<<USISIF)|(1<<USIOIF)|(1<<USIPF)|(1<<USIDC)| /* Clear all flags, except Start Cond  */ \
+    USISR = (1<<USISIF)|(1<<USIOIF)|(1<<USIPF)|(1<<USIDC)| /* Clear all flags, except Start Cond  */ \
       (0x0E<<USICNT0); /* set USI counter to shift 1 bit. */ \
     }
 
@@ -62,54 +62,71 @@
       (0x0<<USICNT0); /* set USI to shift out 8 bits */ \
     }
 
+static volatile uint8_t _state, _address;
+
 USIRESULT usi_init_slave(uint8_t slave_addr)
 {
-	SCL_LOW();
-	SDA_LOW();
-	SCL_INPUT();
+	SCL_HIGH();
+	SDA_HIGH();
+	SCL_OUTPUT();
 	SDA_INPUT();
 
-	do 
+	USICR    =  (1<<USISIE)|(0<<USIOIE)|                            // Enable Start Condition Interrupt. Disable Overflow Interrupt.
+              (1<<USIWM1)|(0<<USIWM0)|                            // Set USI in Two-wire mode. No USI Counter overflow prior
+                                                                  // to first Start Condition (potentail failure)
+              (1<<USICS1)|(0<<USICS0)|(0<<USICLK)|                // Shift Register Clock Source = External, positive edge
+              (0<<USITC);
+  	USISR    = 0xF0;                                                // Clear all flags and reset overflow counter
+
+  restart:
+  	while ((USISR & (1 << USISIF)) == 0) ;
+
+  	SDA_INPUT();
+
+  	while (IS_SCL_HIGH() && !(SDA_HIGH())) ;
+
+	USICR = (IS_SDA_HIGH())				
+		? 1 << USISIE | 1 << USIWM1 | 1 << USIWM0 | 1 << USICS1		// stop
+		: 1 << USISIE | 1 << USIOIE | 1 << USIWM1 | 1 << USIWM0 | 1 << USICS1;	// start
+
+    USISR = SR_RESET;
+
+    WAIT();
+
+    USIRESULT result = USI_OK;
+    if (USIDR == 0 || (USIDR >> 1) == slave_addr)
+	{
+		result = (USIDR & 0x01)
+			? USI_SLAVE_TRANSMIT
+			: USI_SLAVE_RECEIVE;
+
+		SET_USI_TO_SEND_ACK();
+	}
+	else
 	{
 		SET_USI_TO_TWI_START_CONDITION_MODE();
+		goto restart;
+	}
 
-		while ((USISR & (1 << USISIF)) == 0);			// wait start condition
-
-		SDA_INPUT();
-		while (IS_SCL_HIGH() && !(SDA_HIGH())) ;
-
-		USICR = (IS_SDA_HIGH())				// stop condition
-			? 1 << USISIE | 1 << USIWM1 | 1 << USICS1
-			: 1 << USISIE | 1 << USIOIE | 1 << USIWM1 | 1 << USIWM0 | 1 << USICS1;
-
-		USISR = SR_RESET;
-		
-		// After the start condition is detected the slave address is sent
-		// we check if it matches ours (or global.) If not we reset the state
-		WAIT();										
-	} 	// not our slave address
-	while (USIDR != 0 && (USIDR >> 1) != slave_addr);
-
-	//	if (USIDR & 0x01) transmit mode
-	USIRESULT result = (USIDR & 0x01) ? USI_SLAVE_TRANSMIT : USI_SLAVE_RECEIVE;
-
-	// Send the acknowledgment
-	SET_USI_TO_SEND_ACK();
 	return result;
 }
 
 uint8_t usi_write(uint8_t data)
 {
+	WAIT();
+
 	USIDR = data;
-
-	SDA_OUTPUT();
-	SDA_HIGH();
-	USISR = SR_RESET;
+	SET_USI_TO_SEND_DATA();
 
 	WAIT();
-	SDA_INPUT();
-	USISR = SR_SHIFT1;
+	SET_USI_TO_READ_ACK();
 
 	WAIT();
-	return !!USIDR;			// return NACK?
+	if (USIDR)			// nack: stop reading
+	{
+		SET_USI_TO_TWI_START_CONDITION_MODE();
+		// goto: restart
+	}
+
+	return !!USIDR;
 }

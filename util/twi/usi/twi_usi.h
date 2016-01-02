@@ -2,6 +2,7 @@
 
 #include <avr/io.h>
 #include <util/delay.h>
+#include <avr/interrupt.h>
 
 #if defined (__AVR_ATtiny85__)
     #define DDR_USI             DDRB
@@ -16,6 +17,7 @@
 #endif
 
 typedef uint8_t USIRESULT;
+#define USI_NOT_US 0			// TEMP
 #define USI_OK 1
 #define USI_SLAVE_TRANSMIT 2
 #define USI_SLAVE_RECEIVE 3
