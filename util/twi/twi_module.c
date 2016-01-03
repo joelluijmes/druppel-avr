@@ -18,7 +18,7 @@ static BOOL start_master()
 	TWCR = 1 << TWINT | 1 << TWSTA | 1 << TWEN;			// Clears INT | Start bit | Enable TWI
 	WAIT();
 
-	return !!(TW_STATUS == TW_START || TW_STATUS == TW_REP_START);	// true if we got hold of the bus
+	return (TW_STATUS == TW_START || TW_STATUS == TW_REP_START);	// true if we got hold of the bus
 }
 
 void twi_master_init()

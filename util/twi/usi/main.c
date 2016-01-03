@@ -10,9 +10,12 @@ int main()
 
 	//sei();
 	usi_init_slave(0x08);
-	usi_write(0xFF);
-	PORTB &= ~0x02;
+	while (1)
+	{
+		_delay_ms(100);
+		usi_read();
+		PORTB ^= 0x02;
+	}
 
-	while (1) ;
 	return 0;
 }

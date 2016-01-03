@@ -27,40 +27,45 @@
 
 #define WAIT() do { } while ((USISR & (1 << USIOIF)) == 0)
 
-#define SET_USI_TO_SEND_ACK() {  \
-    USIDR = 0; /* Prepare ACK */ \
-	SDA_OUTPUT(); /* Set SDA as output*/ \
-    USISR = (1<<USISIF)|(1<<USIOIF)|(1<<USIPF)|(1<<USIDC)| /* Clear all flags, except Start Cond  */ \
-      (0x0E<<USICNT0); /* set USI counter to shift 1 bit. */ \
-    }
-
-#define SET_USI_TO_READ_ACK() { \
-    SDA_INPUT(); /* Set SDA as input */  \
-    USIDR = 0; /* Prepare ACK */ \
-    USISR = (0<<USISIF)|(1<<USIOIF)|(1<<USIPF)|(1<<USIDC)| /* Clear all flags, except Start Cond */ \
-      (0x0E<<USICNT0); /* set USI counter to shift 1 bit. */ \
-    }
-
-#define SET_USI_TO_TWI_START_CONDITION_MODE() { \
-    USICR = (1<<USISIE)|(0<<USIOIE)|  /* Enable Start Condition Interrupt. Disable Overflow Interrupt.*/  \
-      (1<<USIWM1)|(0<<USIWM0)| /* Set USI in Two-wire mode. No USI Counter overflow hold. */  \
-      (1<<USICS1)|(0<<USICS0)|(0<<USICLK)| /* Shift Register Clock Source = External, positive edge */   \
-      (0<<USITC); \
-    USISR = (0<<USISIF)|(1<<USIOIF)|(1<<USIPF)|(1<<USIDC)| /* Clear all flags, except Start Cond */  \
-      (0x0<<USICNT0); \
+#define SET_USI_TO_SEND_ACK()                                                                                 \
+{                                                                                                             \
+    USIDR    =  0;                                              /* Prepare ACK                         */ \
+    SDA_OUTPUT();                                               /* Set SDA as output                   */ \
+    USISR    =  (0<<USISIF)|(1<<USIOIF)|(1<<USIPF)|(1<<USIDC)|  /* Clear all flags, except Start Cond  */ \
+                (0x0E<<USICNT0);                                /* set USI counter to shift 1 bit. */ \
 }
 
-#define SET_USI_TO_SEND_DATA() { \
-    SDA_OUTPUT(); /* Set SDA as output */ \
-    USISR    =  (0<<USISIF)|(1<<USIOIF)|(1<<USIPF)|(1<<USIDC)| /* Clear all flags, except Start Cond */ \
-      (0x0<<USICNT0); /* set USI to shift out 8 bits */ \
-    }
+#define SET_USI_TO_READ_ACK()                                                                                 \
+{                                                                                                             \
+    SDA_INPUT();                                                /* Set SDA as intput */                   \
+    USIDR    =  0;                                              /* Prepare ACK        */                      \
+    USISR    =  (0<<USISIF)|(1<<USIOIF)|(1<<USIPF)|(1<<USIDC)|  /* Clear all flags, except Start Cond  */ \
+                (0x0E<<USICNT0);                                /* set USI counter to shift 1 bit. */ \
+}
 
-#define SET_USI_TO_READ_DATA() { \
-    SDA_INPUT(); /* Set SDA as input*/ \
-    USISR    =  (0<<USISIF)|(1<<USIOIF)|(1<<USIPF)|(1<<USIDC)| /* Clear all flags, except Start Cond */ \
-      (0x0<<USICNT0); /* set USI to shift out 8 bits */ \
-    }
+#define SET_USI_TO_TWI_START_CONDITION_MODE()                                                                                     \
+{                                                                                                                                 \
+  USICR    =  (1<<USISIE)|(0<<USIOIE)|                          /* Enable Start Condition Interrupt. Disable Overflow Interrupt.*/  \
+              (1<<USIWM1)|(0<<USIWM0)|                          /* Set USI in Two-wire mode. No USI Counter overflow hold.      */  \
+              (1<<USICS1)|(0<<USICS0)|(0<<USICLK)|              /* Shift Register Clock Source = External, positive edge        */  \
+              (0<<USITC);                                                                                                         \
+  USISR    =  (0<<USISIF)|(1<<USIOIF)|(1<<USIPF)|(1<<USIDC)|    /* Clear all flags, except Start Cond               */  \
+              (0x0<<USICNT0);                                                                                                     \
+}
+
+#define SET_USI_TO_SEND_DATA()                                                                               \
+{                                                                                                            \
+    SDA_OUTPUT();                                               /* Set SDA as output                  */ \
+    USISR    =  (0<<USISIF)|(1<<USIOIF)|(1<<USIPF)|(1<<USIDC)|  /* Clear all flags, except Start Cond */ \
+                (0x0<<USICNT0);                                 /* set USI to shift out 8 bits        */ \
+}
+
+#define SET_USI_TO_READ_DATA()                                                                               \
+{                                                                                                            \
+    SDA_INPUT();                                                /* Set SDA as input                   */ \
+    USISR    =  (0<<USISIF)|(1<<USIOIF)|(1<<USIPF)|(1<<USIDC)|  /* Clear all flags, except Start Cond */ \
+                (0x0<<USICNT0);                                 /* set USI to shift out 8 bits        */ \
+}
 
 static volatile uint8_t _state, _address;
 
@@ -121,4 +126,16 @@ uint8_t usi_write(uint8_t data)
 	}
 
 	return !!USIDR;
+}
+
+uint8_t usi_read()
+{
+    WAIT();
+    SET_USI_TO_READ_DATA();
+
+    WAIT();
+    uint8_t data = USIDR;
+    SET_USI_TO_SEND_ACK();
+
+    return data;
 }
