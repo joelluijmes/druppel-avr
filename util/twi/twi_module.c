@@ -28,7 +28,7 @@ void twi_master_init()
 
 void twi_slave_init(uint8_t slave_addr)
 {
-	init_clock();
+	//init_clock();
 	
 	// Enable acknowledge makes the slave ack when it receives its slave address or when a general
 	// call has been received (not enabled tho)

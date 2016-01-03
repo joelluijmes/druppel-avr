@@ -27,7 +27,7 @@ int main()
 
 	while(1)
 	{
-		_delay_ms(500);
+		//_delay_ms(500);
 		twi_write(0xFF);
 		printf("%x\n", TW_STATUS);
 	}
