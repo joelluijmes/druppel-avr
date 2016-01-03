@@ -11,6 +11,7 @@
 #define SCL_INPUT() DDR_USI &= ~(1<<PIN_USI_SCL)
 
 #define SR_RESET (1 << USISIF | 1 << USIOIF | 1 << USIPF | 1 << USIDC)
+#define SR_SHIFT8 (SR_RESET)
 #define SR_SHIFT1 (SR_RESET | 0x0E << USICNT0)
 #define SR_TICK (SR_RESET | 1 << USITC)
 #define CR_TICK (1 << USIWM1 | 1 << USICS1 | 1 << USICLK | 1 << USITC)
@@ -18,14 +19,6 @@
 #define IS_SCL_HIGH() (PIN_USI & (1<<PIN_USI_SCL))
 #define IS_SDA_HIGH() (PIN_USI & (1<<PIN_USI_SDA))
 
-#define STATE_CHECK_ADDRESS                (0x00)
-#define STATE_SEND_DATA                    (0x01)
-#define STATE_REQUEST_REPLY_FROM_SEND_DATA (0x02)
-#define STATE_CHECK_REPLY_FROM_SEND_DATA   (0x03)
-#define STATE_REQUEST_DATA                 (0x04)
-#define STATE_GET_DATA_AND_SEND_ACK        (0x05)
-
-#define WAIT() do { } while ((USISR & (1 << USIOIF)) == 0)
 
 //#define TWI_FAST_MODE
 #define SYS_CLK   1000.0  // [kHz]
@@ -77,6 +70,33 @@
     USISR    =  (0<<USISIF)|(1<<USIOIF)|(1<<USIPF)|(1<<USIDC)|  /* Clear all flags, except Start Cond */ \
     (0x0<<USICNT0);                                 /* set USI to shift out 8 bits        */ \
 }
+
+#define WAIT_TRANSFER()                                                                                \
+{                                                                                                      \
+    do                                                                                                 \
+    {                                                                                                  \
+        _delay_us(T2_TWI/4);                                                                           \
+        USICR = CR_TICK;                        /* Rising SCL Edge */                                  \
+        while (!IS_SCL_HIGH());                 /* wait scl high */                                    \
+        _delay_us(T4_TWI/4);                                                                           \
+        USICR = CR_TICK;                        /* Falling SCL Edge */                                 \
+    } while ((USISR & (1 << USIOIF)) == 0);     /* Operation completes */                              \
+    _delay_us(T2_TWI/4);                                                                               \
+}
+
+#define WAIT_TRANSFER_1BIT()                                                                           \
+{                                                                                                      \
+    USISR = SR_SHIFT1;                          /* Count one bit (2 edges) */                          \
+    WAIT_TRANSFER();                                                                                   \
+}                                                                                                      
+                                                                                                       
+#define WAIT_TRANSFER_8BIT()                                                                           \
+{                                                                                                      \
+    USISR = SR_SHIFT8;                          /* Count one bit (2 edges) */                          \
+    WAIT_TRANSFER();                                                                                   \
+}
+
+#define WAIT() do { } while ((USISR & (1 << USIOIF)) == 0)
 
 static volatile uint8_t _state, _address;
 
@@ -131,41 +151,33 @@ static void start_condition()
     SDA_HIGH();
 }
 
-// Weird Atmel stuff (AVR310 Appnote)
-static uint8_t transfer(uint8_t tmp)
+static uint8_t ack()
 {
-  USISR = tmp;                                     // Set USISR according to temp.
-  // Prepare clocking.
-  tmp  =  (0<<USISIE)|(0<<USIOIE)|                 // Interrupts disabled
-  (1<<USIWM1)|(0<<USIWM0)|                 // Set USI in Two-wire mode.
-  (1<<USICS1)|(0<<USICS0)|(1<<USICLK)|     // Software clock strobe as source.
-  (1<<USITC);                              // Toggle Clock Port.
+    SCL_LOW();
+    WAIT_TRANSFER_1BIT();
+    uint8_t tmp = USIDR;
+    USIDR = 0xFF;
+    SDA_OUTPUT();
 
-  do 
-  {
-    _delay_us(T2_TWI/4);
-    USICR = tmp;
-    while (!IS_SCL_HIGH());                 // wait scl high
-    _delay_us(T4_TWI/4);
-    USICR = tmp;
-  } while ((USISR & (1 << USIOIF)) == 0);   // while not completed
-
-  _delay_us(T2_TWI/4);
-  tmp = USIDR;
-  USIDR = 0xFF;
-  SDA_OUTPUT();
-
-  return tmp;
+    return tmp;
 }
 
+static uint8_t transfer(uint8_t data)
+{
+    SCL_LOW();
+    USIDR = data;
+    
+    WAIT_TRANSFER_8BIT();
+    
+    uint8_t tmp = USIDR;
+    USIDR = 0xFF;
+    SDA_OUTPUT();
+
+    return tmp;
+}
 
 uint8_t usi_init_mt(uint8_t slave_addr)
 {
-unsigned char tempUSISR_8bit = (1<<USISIF)|(1<<USIOIF)|(1<<USIPF)|(1<<USIDC)|      // Prepare register value to: Clear flags, and
-(0x0<<USICNT0);                                     // set USI to shift 8 bits i.e. count 16 clock edges.
-unsigned char tempUSISR_1bit = (1<<USISIF)|(1<<USIOIF)|(1<<USIPF)|(1<<USIDC)|      // Prepare register value to: Clear flags, and
-(0xE<<USICNT0);                                     // set USI to shift 1 bit i.e. count 2 clock edges.
-
     SCL_HIGH();
     SDA_HIGH();
     
@@ -185,14 +197,12 @@ unsigned char tempUSISR_1bit = (1<<USISIF)|(1<<USIOIF)|(1<<USIPF)|(1<<USIDC)|   
         return 0;
 
     SCL_LOW();
-    USIDR = slave_addr << 1;
-    transfer(tempUSISR_8bit);                           // transfer slave address
+    //USIDR = slave_addr << 1;
+    transfer(slave_addr << 1);                          // transfer slave address
 
     SDA_INPUT();
-    uint8_t t = transfer(tempUSISR_1bit);
+    uint8_t t = ack();
     return (t & (1 << 0));
-
-    return 1;
 }
 
 uint8_t usi_write(uint8_t data)
