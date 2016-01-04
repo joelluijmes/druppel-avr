@@ -1,5 +1,7 @@
 #include "twi.h"
 
+#include <stdio.h>
+
 #define WAIT() do { } while ((TWCR & (1 << TWINT)) == 0)
 
 typedef uint8_t BOOL;
@@ -73,13 +75,15 @@ TWRESULT twi_mr_start(uint8_t slave_addr)
 void twi_stop()
 {
 	TWCR = 1 << TWINT | 1 << TWSTO | 1 << TWEN;			// Releases the bus
-	WAIT();
+	//WAIT();											// Breaks it
 }
 
 uint8_t twi_read()
 {
+	puts("read..");
 	TWCR = 1 << TWINT | 1 << TWEA | 1 << TWEN;			// Enables TWI | Send ACK after op
 	WAIT();
+	puts("done");
 
 	return TWDR;										// Returns data
 }

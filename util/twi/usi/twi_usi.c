@@ -92,7 +92,7 @@
                                                                                                        
 #define WAIT_TRANSFER_8BIT()                                                                           \
 {                                                                                                      \
-    USISR = SR_SHIFT8;                          /* Count 8 bits (16 edges) */                          \
+    USISR = SR_SHIFT8;                          /* Count one bit (2 edges) */                          \
     WAIT_TRANSFER();                                                                                   \
 }
 
@@ -151,9 +151,12 @@ static void start_condition()
     SDA_HIGH();
 }
 
-static uint8_t ack()
+uint8_t ack()
 {
-    SCL_LOW();
+    SDA_INPUT();
+    //SCL_LOW();
+    //USIDR = data;
+    
     WAIT_TRANSFER_1BIT();
     uint8_t tmp = USIDR;
     USIDR = 0xFF;
@@ -162,13 +165,22 @@ static uint8_t ack()
     return tmp;
 }
 
-static uint8_t transfer(uint8_t data)
+static uint8_t receive(uint8_t data)
+{
+    SDA_INPUT();
+    WAIT_TRANSFER_8BIT();
+
+    uint8_t tmp = USIDR;
+    SDA_OUTPUT();
+    return tmp;
+}
+
+uint8_t write(uint8_t data)
 {
     SCL_LOW();
     USIDR = data;
     
     WAIT_TRANSFER_8BIT();
-    
     uint8_t tmp = USIDR;
     USIDR = 0xFF;
     SDA_OUTPUT();
@@ -189,18 +201,14 @@ uint8_t usi_init_mt(uint8_t slave_addr)
       (1<<USIWM1)|(0<<USIWM0)|                            // Set USI in Two-wire mode.
       (1<<USICS1)|(0<<USICS0)|(1<<USICLK)|                // Software stobe as counter clock source
       (0<<USITC);
-    USISR = (1<<USISIF)|(1<<USIOIF)|(1<<USIPF)|(1<<USIDC)|      // Clear flags,
-      (0x0<<USICNT0);                                     // and reset counter.
+    USISR = SR_RESET;
 
     start_condition();
     if ((USISR & (1 << USISIF)) == 0)                   // sent start condition :)
         return 0;
 
-    SCL_LOW();
-    //USIDR = slave_addr << 1;
-    transfer(slave_addr << 1);                          // transfer slave address
+    write(slave_addr << 1);                             // transfer slave address
 
-    SDA_INPUT();
     uint8_t t = ack();
     return (t & (1 << 0));
 }
