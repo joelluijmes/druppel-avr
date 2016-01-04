@@ -92,7 +92,7 @@
                                                                                                        
 #define WAIT_TRANSFER_8BIT()                                                                           \
 {                                                                                                      \
-    USISR = SR_SHIFT8;                          /* Count one bit (2 edges) */                          \
+    USISR = SR_SHIFT8;                          /* Count 8 bits (16 edges) */                          \
     WAIT_TRANSFER();                                                                                   \
 }
 
