@@ -1,11 +1,11 @@
 /******************************************************************************
  *
- * FileName: user_softap.c
+ * FileName: i2c_slave.c
  *
- * Description: Setup softap.
+ * Description: I2C slave implementation.
  *
  * Modification history:
- *     2015/12/12, v1.0 create this file.
+ *     2015/1/4, v1.0 create this file.
 *******************************************************************************/
 
 #include "ets_sys.h"
@@ -27,10 +27,7 @@ extern volatile uint32_t PIN_DIR_INPUT;
 
 extern volatile uint32_t PIN_IN;
 
-volatile int8_t count; 
-volatile int8_t clockpulses; 
-volatile uint8_t reading_address; 
-volatile uint16_t reading_address16; 
+volatile int8_t clockpulses;  
 volatile uint8_t i2c_temp; 
 volatile int8_t i2c_bit_number; 
 volatile uint8_t i2c_buffer[10];  
@@ -126,7 +123,7 @@ void i2c_interupt_reading_address() {
             }
         }
 
-        if(i2c_byte_num < (I2C_BYTES )) {
+        if(i2c_byte_num < (I2C_BYTES)) {
             // Sending ack
             // Wait till SCL is low
             while(i2c_read_pin(SCL_PIN));
@@ -162,20 +159,8 @@ void i2c_interupt_reading_address() {
 void i2c_interupt_reading_start() {
     ETS_GPIO_INTR_DISABLE(); // Disable gpio interrupts
 
-    // stime = system_get_time(); 
-
-    // while(!i2c_read_pin(SDA_PIN)) { 
-    // }
-
-    // reading_address = system_get_time() - stime; 
-
-    // gpio_pin_intr_state_set(SDA_PIN, 0);
-
-
     if(i2c_read_pin(SCL_PIN)) 
     {
-        // while(i2c_read_pin(SCL_PIN));
-
         // // Okay start reading...
         // ETS_GPIO_INTR_ATTACH(i2c_interupt_reading_address, SCL_PIN);             // GPIO2 interrupt handler
         // //gpio_output_set(0, 0, 0, GPIO_ID_PIN(SCL_PIN));                       // Set GPIO2 as input
@@ -185,19 +170,8 @@ void i2c_interupt_reading_start() {
 
         i2c_update_status(I2C_READING_ADDRESS); 
 
-
-        // reading_address = system_get_time() - stime; 
-
-        // //count = 1; 
-        // reading_address |= i2c_read_pin(SDA_PIN);
-        // ets_delay_us(1);
-        // reading_address |= i2c_read_pin(SDA_PIN) << 2;
-
-        //reading_address = system_get_time() - stime; 
-        //reading_address = PIN_IN; 
-
     } else {
-        os_printf("Not a start condition\n");
+        //os_printf("Not a start condition\n");
     }
 
     uint32 gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
@@ -208,29 +182,17 @@ void i2c_interupt_reading_start() {
     ETS_GPIO_INTR_ENABLE(); // Enable gpio interrupts
 }
 
-void i2c_slave_read_start() 
-{
-
-}
-
-
 void print_debug_info(void *arg) // in Arduino this is loop the main loop
 {
-    // os_printf("Count: %u, %d\n", x, count);
-
-    // os_printf("status: %u, %u, %u\n", GPIO_INPUT_GET(0), (uint16_t) PIN_IN);
 
     if(clockpulses != 0) {
-        os_printf("DEBUG, address: %u, count: %d, clockpulses: %d\n", reading_address16, i2c_bit_number, clockpulses, (uint16_t) PIN_IN);
+        os_printf("DEBUG, count: %d, clockpulses: %d\n", i2c_bit_number, clockpulses);
 
         os_printf("BUFFER: %d, %d, %d \n", i2c_buffer[0], i2c_buffer[1], i2c_buffer[2]);
     }
-    //gpio_pin_intr_state_set(GPIO_ID_PIN(SCL_PIN), 0);
 
-    count = 7; 
+
     clockpulses = 0; 
-    reading_address = 0; 
-    reading_address16 = 0;
 
     //temp fix
     PIN_DIR_INPUT = 1 << SDA_PIN; 
@@ -245,27 +207,11 @@ void print_debug_info(void *arg) // in Arduino this is loop the main loop
 
     //i2c_slave_intr_init(); 
 
-    // while(i2c_read_pin(SDA_PIN))
-    // {
-
-    // }
-
     // stime = system_get_time(); 
-
-    // while(!i2c_read_pin(SDA_PIN));
-
     // reading_address = system_get_time() - stime; 
-        
-    // os_printf("timer: %d, %u \n", reading_address, (uint16_t) PIN_IN);
 
-    // ETS_GPIO_INTR_DISABLE();                                        // Disable gpio interrupts
-    // ETS_GPIO_INTR_ATTACH(i2c_interupt_reading_start, 2);            // GPIO2 interrupt handler
-    // gpio_pin_intr_state_set(GPIO_ID_PIN(2), 2);                     // Interrupt on negative edge
     ETS_GPIO_INTR_ENABLE();
 }
-
-
-
 
 /**
 *  trigger
@@ -290,36 +236,24 @@ void ICACHE_FLASH_ATTR
 i2c_slave_init(void)
 {
 
-
     PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0);            // SET GPIO function, not uart...
     PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_GPIO2);            // SET GPIO function, not uart...
 
-    // Setting I2C pins to input 
+    // Setting I2C pins to input
     gpio_output_set(0, 0, 0, GPIO_ID_PIN(0));
     gpio_output_set(0, 0, 0, GPIO_ID_PIN(2));
 
 
-    count = 7; 
-    reading_address = 0; 
     i2c_byte_num = 0; 
 
     user_i2c_debug(); 
 
     //i2c_slave_intr_init(); 
-    //i2c_update_status(I2C_READING_START); 
-
-    i2c_slave_intr_init(); 
+    i2c_update_status(I2C_READING_START); 
 
     // ETS_GPIO_INTR_ATTACH(i2c_interupt_reading_address, SCL_PIN);             // GPIO2 interrupt handler
     // gpio_pin_intr_state_set(SCL_PIN, 1);                       // Interrupt on positive edge
     // ETS_GPIO_INTR_ENABLE();    
-
-    // ETS_GPIO_INTR_DISABLE(); // Disable gpio interrupts
-    // ETS_GPIO_INTR_ATTACH(i2c_interupt_reading_address, SCL_PIN);             // GPIO2 interrupt handler
-    // //gpio_output_set(0, 0, 0, GPIO_ID_PIN(SCL_PIN));                       // Set GPIO2 as input
-    // gpio_pin_intr_state_set(GPIO_ID_PIN(SCL_PIN), 1);         // Interrupt on positive edge
-
-    // gpio_pin_intr_state_set(GPIO_ID_PIN(SDA_PIN), 0);
 }
 
 
