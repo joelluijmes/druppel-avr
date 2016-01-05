@@ -60,6 +60,11 @@ void write_page_address(uint16_t address, uint8_t* buf, uint8_t buflen)
 	_delay_ms(10);
 }
 
+void eeprom_get_free_page_address(void)
+{
+
+}
+
 uint8_t get_ctrl_id()
 {
 	return EEPROM_24LC256_CTRL_ID << 3 | EEPROM_24LC256_A2 << 2 | EEPROM_24LC256_A1 << 1 | EEPROM_24LC256_A0;

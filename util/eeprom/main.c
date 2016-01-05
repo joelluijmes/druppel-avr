@@ -2,7 +2,7 @@
 #include <util/delay.h>
 #include <avr/interrupt.h>
 
-#include "../twi/twi.h"
+#include "../twi/twi_module.h"
 #include "../uart/uart.h"
 
 #include "eeprom.h"
@@ -25,6 +25,12 @@ int main()
 	for(uint8_t i; i < 64; i++)
 		buffer[i] = i;
 	write_page_address(0x00, &buffer, 64); 
+
+	_delay_ms(250); 
+
+	for(uint8_t i; i < 64; i++)
+		buffer[i] = i;
+	write_page_address(0x10, &buffer, 20); 
 
 	for(uint8_t i = 0; i < 64; i++)
 		buffer[i] = 0;
