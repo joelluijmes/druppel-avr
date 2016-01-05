@@ -36,6 +36,8 @@ os_install_putc1((void *)uart1_write_char);
 #include "user_i2c.h"
 #include "user_interface.h"
 
+#include "i2c_slave.h"
+
 //#include "espconn.h"
 //#include "mem.h"
 //#include "driver/uart.h"
@@ -44,19 +46,43 @@ static char hwaddr[6];
 #define MACSTR "%02x:%02x:%02x:%02x:%02x:%02x"
 #define MAC2STR(a) (a)[0], (a)[1], (a)[2], (a)[3], (a)[4], (a)[5]
 
+extern volatile uint32_t PIN_OUT;
+extern volatile uint32_t PIN_OUT_SET;
+extern volatile uint32_t PIN_OUT_CLEAR;
+
+extern volatile uint32_t PIN_DIR;
+extern volatile uint32_t PIN_DIR_OUTPUT;
+extern volatile uint32_t PIN_DIR_INPUT;
+
+extern volatile uint32_t PIN_IN;
+
+extern volatile uint32_t PIN_0;
+extern volatile uint32_t PIN_2;
+
+static volatile os_timer_t some_timer;
+
+volatile uint16_t count; 
+volatile uint16_t x; 
+
 
 static void ICACHE_FLASH_ATTR 
 init_done_cb() {
+    // 1010 1011 = 0xAB
 
-    user_i2c_init();
+
+    i2c_slave_init(); 
+
+    //user_i2c_slave_init(); 
+
+    //user_i2c_init();
 
 
-    // Wifi connect to ap
-    os_delay_us(3000*1000); 
-    wifi_station_disconnect(); 
-    wifi_station_connect();
+    // // Wifi connect to ap
+    // os_delay_us(3000*1000);
+    // wifi_station_disconnect();
+    // wifi_station_connect();
 
-    os_printf("autoconnect: %d ", wifi_station_get_auto_connect());
+    //os_printf("autoconnect: %d ", wifi_station_get_auto_connect());
 }
 
 LOCAL void event_cb(System_Event_t *event) {
