@@ -20,13 +20,16 @@ int main()
 	uart_init();
 	puts("Slave Receive!");
 	
+	PORTB = 0x20;
 	twi_slave_init(0x08);
+	printf("%x", TW_STATUS);
+	PINB = 0x20;
 	puts("Connected");
 
-	while (1)
+	while (TW_STATUS != TW_SR_STOP)
 	{
-		char c = twi_read();
-		printf("Char: %c Status: %x\n", c, TW_STATUS);
+		uint8_t c = twi_read();
+		printf("Char: %x Status: %x\n", c, TW_STATUS);
 
 		if (TW_STATUS != TW_SR_SLA_ACK)
 			break;

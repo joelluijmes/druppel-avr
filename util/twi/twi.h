@@ -11,3 +11,5 @@ typedef uint8_t TWRESULT;
 #define TWST_SL_RECEIVING 5
 
 #define TWST_STOP_FAILED 6
+
+TWRESULT twi_send(uint8_t slaveaddr, uint8_t* buffer, uint8_t len);
