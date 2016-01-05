@@ -22,20 +22,24 @@ int main()
 	uint8_t slave = 0x08;
 
 	_delay_ms(10);
-	while (twi_mt_start(slave) != TWST_OK)
+	puts("initts");
+	if (twi_mr_start(slave) != TWST_OK)
 	{
 		PINB = 0x20;
+		puts("failed");
 		twi_stop();
-		_delay_ms(500);
+		printf("%x\n", TW_STATUS);
 	}
 
-	printf("%x\n", TW_STATUS);
-
-	_delay_ms(2);
+	PORTB = 0x20;
+	_delay_ms(20);
 	while(1)
-	{
-		twi_write(0x00);
-		
+	{	
+		uint8_t data = twi_read();
+		printf("Data: %d\tStatus: %x\n", data, TW_STATUS);
+
+		PINB = 0x20;
+
 		if (TW_STATUS != TW_MT_DATA_ACK)
 			break;
 	}

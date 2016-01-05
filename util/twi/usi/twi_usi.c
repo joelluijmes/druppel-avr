@@ -109,8 +109,8 @@ USIRESULT usi_wait()
     } while (USIDR != 0 && (USIDR >> 1) != _address);       // Repeat as long we are not addressed by the master
 
     USIRESULT result = (USIDR & 0x01)                       // Check if we are transmitting or receiving slave
-        ? USI_SLAVE_TRANSMIT
-        : USI_SLAVE_RECEIVE;
+        ? USI_SLAVE_RECEIVE
+        : USI_SLAVE_TRANSMIT;
 
     SET_USI_TO_SEND_ACK();                                  // Send the acknowledge 
     return result;
@@ -192,6 +192,18 @@ uint8_t usi_read_slave()
     SET_USI_TO_SEND_ACK();                              // Send ACK
 
     return data;                                        // Returns the data
+}
+
+void usi_stop()
+{
+    SDA_LOW();                                          // Pulls data low
+    SCL_HIGH();                                         // Releases clock
+    while (!IS_SCL_HIGH()) ;                            // Wait for clock to be released
+    _delay_us(T4_TWI/4);
+    SDA_HIGH();                                         // Releases data
+    _delay_us(T2_TWI/4);
+
+    return (USISR & (1 << USIPF)) != 0;                 // Returns true if stop succeeded
 }
 
 static void start_condition()

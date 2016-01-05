@@ -26,7 +26,7 @@ int main()
 	while (1)
 	{
 		uint8_t data = twi_read();
-		printf("%c\n", data);
+		printf("Data: %d\tStatus: %x\n", data, TW_STATUS);
 
 		PINB = 0x20;
 	}
