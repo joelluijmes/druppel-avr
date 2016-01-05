@@ -2,11 +2,11 @@ CC = avr-gcc
 OBJCOPY = avr-objcopy
 DUDE = avrdude
 
-CCFLAGS = -Wall -O2 -mmcu=atmega328p -DF_CPU=16000000UL -DBAUD=57600 -std=c99
+CCFLAGS = -Wall -O2 -mmcu=attiny85 -DF_CPU=800000UL -DBAUD=57600 -std=c99
 OBJCOPYFLAGS = -O ihex
-DUDEFLAGS = -p atmega328p -b 57600 -c arduino -PCOM4 -v
+DUDEFLAGS = -pattiny85 -b 19200 -B10 -c stk500v1 -PCOM3 -v
 
-SOURCES = main.c ..\twi_module.c ..\..\uart\uart.c
+SOURCES = main.c ..\twi_usi.c
 COMPILED = firmware.hex
 LINKED = firmware.o
 OBJECTS = $(SOURCES:.c=.o)

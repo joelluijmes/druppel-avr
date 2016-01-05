@@ -89,7 +89,7 @@
 static uint8_t _address;
 static void start_condition();
 
-USIRESULT usi_wait()
+TWRESULT usi_wait()
 {
     do
     {
@@ -108,15 +108,15 @@ USIRESULT usi_wait()
         SLAVE_WAIT();                                       // Wait for completion
     } while (USIDR != 0 && (USIDR >> 1) != _address);       // Repeat as long we are not addressed by the master
 
-    USIRESULT result = (USIDR & 0x01)                       // Check if we are transmitting or receiving slave
-        ? USI_SLAVE_RECEIVE
-        : USI_SLAVE_TRANSMIT;
+    TWRESULT result = (USIDR & 0x01)                       // Check if we are transmitting or receiving slave
+        ? TWST_SL_RECEIVING
+        : TWST_SL_TRANSMITTING;
 
     SET_USI_TO_SEND_ACK();                                  // Send the acknowledge 
     return result;
 }
 
-USIRESULT usi_init_slave(uint8_t slave_addr)
+TWRESULT usi_init_slave(uint8_t slave_addr)
 {
     _address = slave_addr;
     // Not sure what initial values should be used but these seem to work best :D
@@ -128,7 +128,7 @@ USIRESULT usi_init_slave(uint8_t slave_addr)
     return usi_wait();
 }
 
-uint8_t usi_init_mt(uint8_t slave_addr)
+TWRESULT usi_init_master(uint8_t slave_addr, uint8_t transmitting)
 {
     SCL_HIGH();
     SDA_HIGH();
@@ -144,7 +144,11 @@ uint8_t usi_init_mt(uint8_t slave_addr)
     if ((USISR & (1 << USISIF)) == 0)                   // Checks start condition :)
         return 0;
 
-    return usi_write_master(slave_addr << 1);           // Sends slave address and returns ack
+    // Data is the slave address and the bit if we are sending or receiving
+    uint8_t data = (slave_addr << 1) | (transmitting ? 0x01 : 0x00);
+    return usi_write_master(data)
+        ? TWST_MASTER_NACK                              // Didn't receive ack :(
+        : TWST_OK;                      
 }
 
 uint8_t usi_write_master(uint8_t data)
@@ -194,7 +198,7 @@ uint8_t usi_read_slave()
     return data;                                        // Returns the data
 }
 
-void usi_stop()
+TWRESULT usi_stop()
 {
     SDA_LOW();                                          // Pulls data low
     SCL_HIGH();                                         // Releases clock
@@ -203,7 +207,9 @@ void usi_stop()
     SDA_HIGH();                                         // Releases data
     _delay_us(T2_TWI/4);
 
-    return (USISR & (1 << USIPF)) != 0;                 // Returns true if stop succeeded
+    return (USISR & (1 << USIPF)) 
+        ? TWST_OK
+        : TWST_STOP_FAILED;                             // Returns true if stop succeeded
 }
 
 static void start_condition()

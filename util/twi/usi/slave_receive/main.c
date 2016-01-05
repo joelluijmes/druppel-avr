@@ -1,7 +1,7 @@
 #include <util/delay.h>
 #include <avr/io.h>
 
-#include "twi_usi.h"
+#include "..\twi_usi.h"
 
 int main()
 {
@@ -13,7 +13,7 @@ int main()
 	while (1)
 	{
 		_delay_ms(100);
-		usi_read();
+		usi_read_slave();
 		PORTB ^= 0x02;
 	}
 
