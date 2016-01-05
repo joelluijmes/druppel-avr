@@ -1,5 +1,7 @@
 #include "twi.h"
 
+#include <stdio.h>
+
 #define WAIT() do { } while ((TWCR & (1 << TWINT)) == 0)
 
 typedef uint8_t BOOL;
@@ -28,7 +30,7 @@ void twi_master_init()
 
 void twi_slave_init(uint8_t slave_addr)
 {
-	init_clock();
+	//init_clock();
 	
 	// Enable acknowledge makes the slave ack when it receives its slave address or when a general
 	// call has been received (not enabled tho)
@@ -73,7 +75,7 @@ TWRESULT twi_mr_start(uint8_t slave_addr)
 void twi_stop()
 {
 	TWCR = 1 << TWINT | 1 << TWSTO | 1 << TWEN;			// Releases the bus
-	WAIT();
+	//WAIT();											// Breaks it
 }
 
 uint8_t twi_read()

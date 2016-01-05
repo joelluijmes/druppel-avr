@@ -167,10 +167,12 @@ user_i2c_init(void)
     user_ds1307_read(&time);
     user_ds1307_print(&time); 
 
+    //100khz = 10 us 
+
     //system_soft_wdt_stop();
     //uint8 i = 0;
     //for(i = 0; i < 10; i++) 
-    while(0)
+    while(1)
     {
         os_delay_us(2000*1000); 
         os_printf("Reading values.. \n"); 	
