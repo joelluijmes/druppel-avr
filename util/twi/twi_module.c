@@ -80,10 +80,8 @@ void twi_stop()
 
 uint8_t twi_read()
 {
-	puts("read..");
 	TWCR = 1 << TWINT | 1 << TWEA | 1 << TWEN;			// Enables TWI | Send ACK after op
 	WAIT();
-	puts("done");
 
 	return TWDR;										// Returns data
 }
