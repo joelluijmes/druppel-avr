@@ -186,6 +186,19 @@ uint8_t usi_write_slave(uint8_t data)
     return !USIDR;                                      // Returns ACK received                                         
 }
 
+uint8_t usi_read_master(uint8_t nack)
+{
+    SDA_INPUT();
+    WAIT_TRANSFER_8BIT();
+    uint8_t data = USIDR;
+    
+    SDA_OUTPUT();
+    USIDR = nack ? 0xFF : 0x00;
+    WAIT_TRANSFER_1BIT();
+
+    return data;
+}
+
 uint8_t usi_read_slave()
 {
     SLAVE_WAIT();                                       // Wait to be come ready

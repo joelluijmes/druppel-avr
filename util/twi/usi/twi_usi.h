@@ -21,6 +21,7 @@
 TWRESULT usi_init_slave(uint8_t slave_addr);
 TWRESULT usi_init_master(uint8_t slave_addr, uint8_t transmitting);
 uint8_t usi_write_master(uint8_t data);
+uint8_t usi_read_master(uint8_t nack);
 uint8_t usi_write_slave(uint8_t data);
 uint8_t usi_read_slave();
 TWRESULT usi_stop();
