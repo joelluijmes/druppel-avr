@@ -1,14 +1,16 @@
 #include "eeprom.h"
 
-uint8_t read_address(uint16_t address)
+static uint8_t eeprom_get_ctrl_id();
+
+uint8_t eeprom_read_address(uint16_t address)
 {
-	if (twi_mt_start(get_ctrl_id()) != TWST_OK)
+	if (twi_mt_start(eeprom_get_ctrl_id()) != TWST_OK)
 		return 0;
 
 	twi_write(address >> 8);
 	twi_write((uint8_t) address);
 
-	if (twi_mr_start(get_ctrl_id()) != TWST_OK)
+	if (twi_mr_start(eeprom_get_ctrl_id()) != TWST_OK)
 		return 0;
 
 	uint8_t receive = twi_peek(); 
@@ -16,15 +18,15 @@ uint8_t read_address(uint16_t address)
 	return receive; 
 }
 
-void read_page_address(uint16_t address, uint8_t* buf, uint8_t buflen)
+void eeprom_read_page_address(uint16_t address, uint8_t* buf, uint8_t buflen)
 {
-	if (twi_mt_start(get_ctrl_id()) != TWST_OK)
+	if (twi_mt_start(eeprom_get_ctrl_id()) != TWST_OK)
 		return 0;
 
 	twi_write(address >> 8);
 	twi_write((uint8_t) address);
 
-	if (twi_mr_start(get_ctrl_id()) != TWST_OK)
+	if (twi_mr_start(eeprom_get_ctrl_id()) != TWST_OK)
 		return 0;
 
 	for(uint8_t i = 0; i < buflen; i++)
@@ -33,9 +35,9 @@ void read_page_address(uint16_t address, uint8_t* buf, uint8_t buflen)
 	twi_stop();
 }
 
-void write_address(uint16_t address, uint8_t byte)
+void eeprom_write_address(uint16_t address, uint8_t byte)
 {
-	if (twi_mt_start(get_ctrl_id()) != TWST_OK)
+	if (twi_mt_start(eeprom_get_ctrl_id()) != TWST_OK)
 		return 0;
 
 	twi_write((uint8_t) address >> 8);
@@ -45,9 +47,9 @@ void write_address(uint16_t address, uint8_t byte)
 	_delay_ms(10);
 }
 
-void write_page_address(uint16_t address, uint8_t* buf, uint8_t buflen)
+void eeprom_write_page_address(uint16_t address, uint8_t* buf, uint8_t buflen)
 {
-	if (twi_mt_start(get_ctrl_id()) != TWST_OK)
+	if (twi_mt_start(eeprom_get_ctrl_id()) != TWST_OK)
 		return 0;
 
 	twi_write(address >> 8);
@@ -60,12 +62,7 @@ void write_page_address(uint16_t address, uint8_t* buf, uint8_t buflen)
 	_delay_ms(10);
 }
 
-void eeprom_get_free_page_address(void)
-{
-
-}
-
-uint8_t get_ctrl_id()
+static uint8_t eeprom_get_ctrl_id()
 {
 	return EEPROM_24LC256_CTRL_ID << 3 | EEPROM_24LC256_A2 << 2 | EEPROM_24LC256_A1 << 1 | EEPROM_24LC256_A0;
 }

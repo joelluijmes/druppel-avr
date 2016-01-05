@@ -2,7 +2,7 @@
 #include <util/delay.h>
 #include <avr/interrupt.h>
 
-#include "../../util/twi/twi.h"
+#include "../../util/twi/twi_module.h"
 #include "../../util/uart/uart.h"
 #include "../../util/ds1307/ds1307.h"
 
@@ -22,9 +22,11 @@ int main()
 
 	//_delay_ms(20);
 
-	uint32_t unixtime = read_unix_time();
+	//uint32_t unixtime = read_unix_time();
 	// Print unixtime
 	//printf("%u %u\n", (uint16_t) (unixtime >> 16), (uint16_t) unixtime);
+
+	sensors_check(); 
 
 
 
