@@ -4,6 +4,7 @@
 #include <util/twi.h>
 #include <util/delay.h>
 
+#include "../../twi.h"
 #include "../twi_mega.h"
 #include "../../../uart/uart.h"
 
@@ -18,20 +19,21 @@ int main()
 	stdin = &mystdin;
 
 	uart_init();
-	puts("Welcome!");
+	puts("Slave Transmit!");
 	
 	twi_slave_init(0x08);
-
-	twi_write(0xAB);
-
 	printf("Enter char to send: ");
 	while (1)
 	{
 		char c = getchar();
 		twi_write(c);
 		printf("Status: %x\n", TW_STATUS);
+
+		if (TW_STATUS != TW_ST_DATA_ACK)
+			break;
 		PINB = 0x20;
 	}
 
+	puts("Disconnected");
 	return 0;
 }

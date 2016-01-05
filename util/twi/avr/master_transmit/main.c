@@ -20,8 +20,8 @@ int main()
 	uart_init();
 	twi_master_init();
 
-	puts("Master Receive!");
-	while (twi_mr_start(0x08) != TWST_OK)
+	puts("Master Transmit!");
+	while (twi_mt_start(0x08) != TWST_OK)
 	{
 		printf("Failed: %x\n", TW_STATUS);
 		twi_stop();
@@ -29,12 +29,14 @@ int main()
 		getchar();
 	}
 
+	printf("Enter char to send: ");
 	while (1)
 	{
-		char c = twi_read();
+		char c = getchar();
+		twi_write(c);
 
-		printf("Char: %c, Status: %x\n", c, TW_STATUS);		
-		if (TW_STATUS != TW_MR_DATA_ACK)
+		printf("Status: %x\n", TW_STATUS);
+		if (TW_STATUS != TW_MT_DATA_ACK)
 			break;
 
 		PINB = 0x20;

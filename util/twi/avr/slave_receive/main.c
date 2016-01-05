@@ -1,8 +1,8 @@
+#include <stdio.h>
 #include <avr/io.h>
-#include <util/delay.h>
 #include <avr/interrupt.h>
-
 #include <util/twi.h>
+#include <util/delay.h>
 
 #include "../twi_mega.h"
 #include "../../../uart/uart.h"
@@ -18,28 +18,21 @@ int main()
 	stdin = &mystdin;
 
 	uart_init();
-	twi_master_init();
-
-	puts("Master Receive!");
-	while (twi_mr_start(0x08) != TWST_OK)
-	{
-		printf("Failed: %x\n", TW_STATUS);
-		twi_stop();
-		puts("No ACK (Enter to continue)");
-		getchar();
-	}
+	puts("Slave Receive!");
+	
+	twi_slave_init(0x08);
+	puts("Connected");
 
 	while (1)
 	{
 		char c = twi_read();
+		printf("Char: %c Status: %x\n", c, TW_STATUS);
 
-		printf("Char: %c, Status: %x\n", c, TW_STATUS);		
-		if (TW_STATUS != TW_MR_DATA_ACK)
+		if (TW_STATUS != TW_SR_SLA_ACK)
 			break;
-
+		
 		PINB = 0x20;
 	}
 
-	puts("Disconnected");
 	return 0;
 }
