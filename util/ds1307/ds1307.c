@@ -1,6 +1,4 @@
-#include <avr/io.h>
 #include "ds1307.h"
-#include "twi.h"
 
 const uint8_t days_in_month[] = { 31,28,31,30,31,30,31,31,30,31,30,31 };
 

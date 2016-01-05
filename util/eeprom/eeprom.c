@@ -1,7 +1,5 @@
 #include "eeprom.h"
 
-
-
 uint8_t read_address(uint16_t address)
 {
 	if (twi_mt_start(get_ctrl_id()) != TWST_OK)
