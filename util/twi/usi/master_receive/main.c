@@ -8,14 +8,15 @@ int main()
 	DDRB = 0x02;
 	PORTB |= 0x02;
 
-	TWRESULT result = usi_init_slave(0x08);
-	while (result != TWST_SL_RECEIVING)
-		;	// something gone wrong
+	while (usi_init_master(0x08, 0xFF) != TWST_OK)
+	{	// Didn't get ack -> repeat
+		usi_stop();
+	}
 	PORTB &= ~0x02;
 
 	while (1)
 	{
-		volatile uint8_t data = usi_read_slave();
+		volatile uint8_t data = usi_read_master(0xFF);
 		PINB = 0x02;
 	}
 

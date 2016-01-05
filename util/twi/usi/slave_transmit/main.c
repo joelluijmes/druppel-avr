@@ -9,14 +9,17 @@ int main()
 	PORTB |= 0x02;
 
 	TWRESULT result = usi_init_slave(0x08);
-	while (result != TWST_SL_RECEIVING)
+	while (result != TWST_SL_TRANSMITTING)
 		;	// something gone wrong
 	PORTB &= ~0x02;
 
 	while (1)
 	{
-		volatile uint8_t data = usi_read_slave();
-		PINB = 0x02;
+		for (uint8_t i = 255; i > 0; --i)
+		{
+			usi_write_slave(i);
+			PINB = 0x02;
+		}
 	}
 
 	return 0;
