@@ -14,15 +14,10 @@
 #include <util/twi.h>
 #include <stdio.h>
 
-// 100 kHz as clock
-#define SCL_CLOCK 10L
+#include "../twi.h"
 
-// Status codes of what this module will return
-typedef uint8_t TWRESULT;
-#define TWST_OK	1
-#define TWST_START_FAILED 2
-#define TWST_MT_ACK_EXPECTED 3
-#define TWST_MR_ACK_EXPECTED 4
+// 100 kHz as clock
+#define SCL_CLOCK 1000L
 
 // Initializes as master
 void twi_master_init();

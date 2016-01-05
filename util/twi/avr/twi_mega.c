@@ -1,4 +1,4 @@
-#include "twi.h"
+#include "twi_mega.h"
 
 #include <stdio.h>
 
@@ -56,7 +56,7 @@ TWRESULT twi_mt_start(uint8_t slave_addr)
 
 	return (TW_STATUS == TW_MT_SLA_ACK)					// depending on we get an ack of the slave
 		? TWST_OK
-		: TWST_MT_ACK_EXPECTED;							// FAILED
+		: TWST_MASTER_NACK;								// FAILED
 }
 
 TWRESULT twi_mr_start(uint8_t slave_addr)
@@ -69,13 +69,15 @@ TWRESULT twi_mr_start(uint8_t slave_addr)
 
 	return (TW_STATUS == TW_MR_SLA_ACK)					// depending on we get an ack of the slave
 		? TWST_OK
-		: TWST_MR_ACK_EXPECTED;							// FAILED
+		: TWST_MASTER_NACK;								// FAILED
 }
 
 void twi_stop()
 {
-	TWCR = 1 << TWINT | 1 << TWSTO | 1 << TWEN;			// Releases the bus
-	//WAIT();											// Breaks it
+	TWCR = 1 << TWINT | 1 << TWSTO | 1 << TWEN | 1 << TWEA;	// Releases the bus
+	//WAIT();												// Breaks it
+
+	while (TWCR & (1 << TWSTO)) ;
 }
 
 uint8_t twi_read()

@@ -4,9 +4,9 @@ DUDE = avrdude
 
 CCFLAGS = -Wall -O2 -mmcu=atmega328p -DF_CPU=16000000UL -DBAUD=57600 -std=c99
 OBJCOPYFLAGS = -O ihex
-DUDEFLAGS = -p atmega328p -b 57600 -c arduino -PCOM4 -v
+DUDEFLAGS = -p atmega328p -b 57600 -c arduino -PCOM3 -v
 
-SOURCES = main.c ..\twi_module.c ..\..\uart\uart.c
+SOURCES = main.c ..\twi_mega.c ..\..\..\uart\uart.c
 COMPILED = firmware.hex
 LINKED = firmware.o
 OBJECTS = $(SOURCES:.c=.o)
