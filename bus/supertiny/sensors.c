@@ -1,14 +1,17 @@
 #include "sensors.h"
 
 uint16_t data_address; 
+uint8_t total_written_bytes;
 
 static state sensor_start_measure(uint8_t slave_address);
-static state sensor_start_reading(uint8_t slave_address);
+static state sensor_start_reading(uint8_t slave_address, uint32_t unixtime);
 
 uint8_t sensors_check()
 {
+	total_written_bytes = 0; 
 	state states[SENSORS_ADDRESS_SIZE] = {};
-	uint8_t receive_buffer[SENSORS_RECEIVE_BUFFER_SIZE]; 
+	// There are devices so get the current time. 
+	uint32_t unixtime = read_unix_time();
 
 	uint8_t done = false; 
 	while(!done) // todo 
@@ -29,7 +32,7 @@ uint8_t sensors_check()
 			case CONNECTED:
 				// TODO... 
 				printf("connected %d\n", address);
-				states[state_address] = sensor_start_reading(address); 
+				states[state_address] = sensor_start_reading(address, unixtime); 
 				break;
 			case READING_DONE:
 				continue; 
@@ -43,34 +46,41 @@ uint8_t sensors_check()
 		}
 
 	}
-	
-	// There are devices so get the current time. 
-	uint32_t unixtime = read_unix_time();
 
-	uint8_t total_written_bytes = 0;
+	if(total_written_bytes) {
+		_delay_us(100);
+		uint8_t buffer[2];
+		data_address = sensors_get_eeprom_address() + total_written_bytes;
+		buffer[0] = (uint8_t) (data_address >> 8);
+		buffer[1] = (uint8_t) data_address;
+
+		eeprom_write_page_address(0x00, &buffer, 2); 				// Update new address; 
+	}
 }
 
 static state sensor_start_measure(uint8_t slave_address)
 {
 	if (twi_mt_start(slave_address) != TWST_OK)
-		return NOT_CONNECTED;							// Device is not responding
+		return NOT_CONNECTED;										// Device is not responding
 
-	twi_write(0x01);							// Sending measure command code
+	twi_write(0x01);												// Sending measure command code
 	twi_stop(); 
 	return CONNECTED;
 }
 
-static state sensor_start_reading(uint8_t slave_address)
+static state sensor_start_reading(uint8_t slave_address, uint32_t unixtime)
 {
+	uint8_t receive_buffer[SENSORS_RECEIVE_BUFFER_SIZE]; 
 	if (twi_mt_start(slave_address) != TWST_OK)
 		return CONNECTED;
 
-	twi_write(0x02);							// Sending reading command
+	twi_write(0x02);												// Sending reading command
 
 	if (twi_mr_start(slave_address) != TWST_OK)
 		return CONNECTED;
 
-	uint8_t bytes = twi_read();					// Read how many bytes there must be sent 
+	uint8_t bytes = twi_read();										// Read how many bytes there must be sent 
+	bytes = 3; 
 
 	uint8_t i = 0; 
 	while(i < bytes && i < SENSORS_RECEIVE_BUFFER_SIZE)
@@ -78,10 +88,14 @@ static state sensor_start_reading(uint8_t slave_address)
 		receive_buffer[i] = twi_read(); 
 		i++; 
 	}
-	twi_stop(); 								// All bytes received, sending stop condition.
+	twi_stop(); 													// All bytes received, sending stop condition.
 
+
+	_delay_us(100);
 	// Writing data to eeprom
-	//total_written_bytes += write_sensor_eeprom(unixtime, current_sensors[device], &receive_buffer, bytes);
+	total_written_bytes += write_sensor_eeprom(unixtime, slave_address, &receive_buffer, bytes);
+
+	return READING_DONE; 
 }
 
 
@@ -98,8 +112,9 @@ uint8_t write_sensor_eeprom(uint32_t unixtime, uint8_t sensor_id, uint8_t* buf, 
 	buffer[5] = buflen; 
 	for(uint8_t i = 0; i < buflen; i++)
 		buffer[6 + i] = buf[i];
-	eeprom_write_page_address(sensors_get_eeprom_address(), &buffer, datasize);
-	return datasize; 
+	eeprom_write_page_address(sensors_get_eeprom_address(), &buffer, 6 + buflen);
+
+	return 6 + buflen; 
 }
 
 uint16_t sensors_get_eeprom_address() 
