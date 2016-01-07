@@ -1,6 +1,28 @@
 #include "eeprom.h"
 
 static uint8_t eeprom_get_ctrl_id();
+static uint16_t eeprom_data_address;
+
+uint16_t eeprom_get_address() 
+{
+	if(eeprom_data_address == 0) 					// not initialized
+	{
+		uint8_t buffer[2]; 								// First 2 bytes are used to keep the last written address
+		eeprom_read_page_address(0x00, &buffer, 2);
+		eeprom_data_address = buffer[0] << 8 | buffer[1];
+		if(eeprom_data_address == 65535)
+			eeprom_set_address(0x10);
+	}
+	return eeprom_data_address; 
+}
+
+void eeprom_set_address(uint16_t address) 
+{
+	buffer[0] = (uint8_t) (address >> 8);
+	buffer[1] = (uint8_t) address;
+	eeprom_write_page_address(0x00, &buffer, 2);
+	eeprom_data_address = address; 
+}
 
 uint8_t eeprom_read_address(uint16_t address)
 {

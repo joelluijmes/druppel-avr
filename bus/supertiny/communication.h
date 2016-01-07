@@ -9,6 +9,10 @@
 #define COMMUNICATION_ADDRESS_TO 0x10
 #define COMMUNICATION_ADDRESS_SIZE 0x10
 
+#define WIFI_BUSY 0x01
+#define WIFI_READY 0x02
+
+
 // enum state
 // {
 // 	NOT_ATTEMPTED = 0,

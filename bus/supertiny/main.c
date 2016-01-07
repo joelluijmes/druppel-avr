@@ -10,6 +10,8 @@
 #include "communication.h"
 
 
+#define COMMUNICATION_ADDRESS_WIFI 0x10
+
 FILE mystdout = FDEV_SETUP_STREAM(uart_putchar, NULL, _FDEV_SETUP_WRITE);
 
 int main()
@@ -38,7 +40,7 @@ int main()
 
 
 
-	//communication_start(0x20); 
+	//communication_start(COMMUNICATION_ADDRESS_WIFI); 
 
 
 
