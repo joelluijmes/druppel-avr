@@ -156,10 +156,10 @@ TWRESULT usi_start_master(uint8_t slave_addr, uint8_t transmitting)
         return 0;
 
     // Data is the slave address and the bit if we are sending or receiving
-    uint8_t data = (slave_addr << 1) | (transmitting ? 0x01 : 0x00);
+    uint8_t data = (slave_addr << 1) | (transmitting ? 0x00 : 0x01);
     return usi_write_master(data)
-        ? TWST_MASTER_NACK                              // Didn't receive ack :(
-        : TWST_OK;                      
+        ? TWST_OK                              // Didn't receive ack :(
+        : TWST_MASTER_NACK;                      
 }
 
 uint8_t usi_write_master(uint8_t data)
@@ -201,7 +201,7 @@ uint8_t usi_write_slave(uint8_t data)
         // goto: restart??
     }
 
-    return !USIDR;                                      // Returns ACK received                                         
+    return !(USIDR & 0x01);                                      // Returns ACK received                                         
 }
 
 uint8_t usi_read_master(uint8_t nack)
@@ -236,7 +236,7 @@ TWRESULT usi_stop()
     SCL_INPUT();
     while (!IS_SCL_HIGH()) ;                            // Wait for clock to be released
     _delay_us(T4_TWI/4);
-    SDA_INPUT();                                         // Releases data
+    SDA_INPUT();                                        // Releases data
     while (!IS_SDA_HIGH()) ;
 
     return (USISR & (1 << USIPF)) 
@@ -260,5 +260,4 @@ static void start_condition()
     SDA_LOW();                                          // Data low
     _delay_us(T4_TWI/4);                                // Wait falling
     SCL_LOW();                                          // Clock low
-    //SDA_HIGH();                                         // Data high
 }
