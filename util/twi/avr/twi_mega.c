@@ -35,7 +35,7 @@ void twi_slave_init(uint8_t slave_addr)
 	// Enable acknowledge makes the slave ack when it receives its slave address or when a general
 	// call has been received (not enabled tho)
 	TWAR = slave_addr << 1;								// set its slave address
-	TWCR = 1 << TWINT |1 << TWEA | 1 << TWEN;			// Clears INT | Enable Acknowledge | ENable TWI
+	TWCR = 1 << TWEA | 1 << TWEN;			// Clears INT | Enable Acknowledge | ENable TWI
 	WAIT();
 	TWCR = 1 << TWINT |1 << TWEA | 1 << TWEN;			// Appears we have to send it again 
 }

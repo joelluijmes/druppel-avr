@@ -214,11 +214,12 @@ uint8_t usi_read_slave()
 TWRESULT usi_stop()
 {
     SDA_LOW();                                          // Pulls data low
-    SCL_HIGH();                                         // Releases clock
+    _delay_us(T2_TWI/4);
+    SCL_INPUT();
     while (!IS_SCL_HIGH()) ;                            // Wait for clock to be released
     _delay_us(T4_TWI/4);
-    SDA_HIGH();                                         // Releases data
-    _delay_us(T2_TWI/4);
+    SDA_INPUT();                                         // Releases data
+    while (!IS_SDA_HIGH()) ;
 
     return (USISR & (1 << USIPF)) 
         ? TWST_OK
