@@ -22,6 +22,8 @@ int main()
 	twi_master_init();
 
 
+
+	uint32_t unixtime = read_unix_time();
 	//sensors_check(); 
 
 
@@ -32,7 +34,7 @@ int main()
 	// 	buff[i] = 255; 
 	// eeprom_write_page_address(0x00, &buff, 64);
 	// _delay_ms(10);
-	eeprom_read_page_address(0x00, &buff, 64);
+	//eeprom_read_page_address(0x00, &buff, 64);
 
 
 

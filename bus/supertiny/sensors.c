@@ -30,8 +30,6 @@ uint8_t sensors_check()
 			case NOT_CONNECTED:
 				continue; 
 			case CONNECTED:
-				// TODO... 
-				printf("connected %d\n", address);
 				states[state_address] = sensor_start_reading(address, unixtime); 
 				break;
 			case READING_DONE:
