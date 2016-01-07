@@ -21,36 +21,31 @@ extern volatile uint32_t PIN_OUT;
 extern volatile uint32_t PIN_OUT_SET;
 extern volatile uint32_t PIN_OUT_CLEAR;
 
-extern volatile uint32_t PIN_DIR;
-extern volatile uint32_t PIN_DIR_OUTPUT;
 extern volatile uint32_t PIN_DIR_INPUT;
 
 extern volatile uint32_t PIN_IN;
 
-volatile int8_t clockpulses;  
-volatile uint8_t i2c_temp; 
-volatile int8_t i2c_bit_number; 
-volatile uint8_t i2c_buffer[10];  
-volatile uint8_t i2c_byte_num; 
+extern volatile uint8_t wifi_status; 
 
-volatile int8_t reading_bytes; 
+volatile uint8_t    i2c_byte_buffer[64]; 
+volatile uint8_t    i2c_buffer; 
+volatile int8_t     i2c_bit_number;  
+volatile uint8_t    i2c_byte_number; 
+volatile int8_t     clockpulses;        // Debug
 
 volatile uint32 stime;
 
+#define I2C_SLAVE_ADDRESS 0x10
 #define I2C_READING_START 0x01
 #define I2C_READING_ADDRESS 0x02
 #define I2C_READING_BYTES 0x03
 #define I2C_WRITING_BYTES 0x04
 
-#define I2C_BYTES 2
-
+#define I2C_SENT_ACK 1
 
 //#define I2C_READ_PIN(pin) (!!(PIN_IN & ( 1  << pin )))    // outputs 0 or 1
 #define I2C_READ_PIN(pin) (PIN_IN & ( 1  << pin ))
 #define I2C_SDA_SET(value) ((value > 0) ? (PIN_OUT_SET = 1 << SDA_PIN) : (PIN_OUT_CLEAR = 1 << SDA_PIN))
-
-
-static uint8_t i2c_status;
 
 static void i2c_update_status(uint8_t status);
 static void i2c_slave_reading_start();
@@ -58,12 +53,13 @@ static void i2c_slave_reading_address();
 static void i2c_slave_writing_address();
 static void i2c_return_interrupt(); 
 
+static uint8_t i2c_status;
+
 
 static void ICACHE_FLASH_ATTR
 i2c_update_status(uint8_t status)
 {
     // We're assuming that interrupts are disabled
-    //ETS_GPIO_INTR_DISABLE();                                        // Disable gpio interrupts
     if(status == I2C_READING_BYTES && i2c_status == I2C_READING_ADDRESS) {
         i2c_status = status; 
         return;     // do nothing
@@ -80,9 +76,9 @@ i2c_update_status(uint8_t status)
             ETS_GPIO_INTR_ATTACH(i2c_slave_reading_start, SDA_PIN);      // GPIO2 interrupt handler
             gpio_pin_intr_state_set(SDA_PIN, 2);                            // Interrupt on negative edge
 
-            i2c_temp = 0; 
+            i2c_buffer = 0; 
             i2c_bit_number = 7; 
-            i2c_byte_num = 0; 
+            i2c_byte_number = 0; 
             break;
         case I2C_READING_ADDRESS:
             ETS_GPIO_INTR_ATTACH(i2c_slave_reading_address, SCL_PIN);      // GPIO2 interrupt handler
@@ -103,22 +99,36 @@ i2c_update_status(uint8_t status)
 }
 
 static void ICACHE_FLASH_ATTR
+i2c_slave_reading_start() {
+    ETS_GPIO_INTR_DISABLE(); // Disable gpio interrupts
+
+    if(I2C_READ_PIN(SCL_PIN))                       // If start condition is sent
+    {
+        i2c_update_status(I2C_READING_ADDRESS);     // Start reading an address
+    } else {
+        //os_printf("Not a start condition\n");
+    }
+
+    i2c_return_interrupt(); 
+}
+
+static void ICACHE_FLASH_ATTR
 i2c_slave_reading_address() {
     ETS_GPIO_INTR_DISABLE(); // Disable gpio interrupts
     clockpulses++; 
 
     if(i2c_bit_number > 0) {
-        i2c_temp |= GPIO_INPUT_GET(SDA_PIN) << i2c_bit_number;
+        i2c_buffer |= GPIO_INPUT_GET(SDA_PIN) << i2c_bit_number;
         i2c_bit_number--; 
 
     } else if(i2c_bit_number == 0) {
-        i2c_temp |= GPIO_INPUT_GET(SDA_PIN) << i2c_bit_number;
+        i2c_buffer |= GPIO_INPUT_GET(SDA_PIN) << i2c_bit_number;
         i2c_bit_number--; 
 
 
         if(i2c_status == I2C_READING_ADDRESS) {
-            if((i2c_temp >> 1) != 0x55) {
-                os_printf("Reading restart, received address: %d, 0x%\n", i2c_temp);
+            if((i2c_buffer >> 1) != I2C_SLAVE_ADDRESS) {
+                os_printf("I2C: Reading restart, received address: %d, 0x%x \n", i2c_buffer, i2c_buffer);
                 i2c_update_status(I2C_READING_START);
 
                 i2c_return_interrupt(); 
@@ -129,21 +139,18 @@ i2c_slave_reading_address() {
             }
         }
 
-        if(i2c_byte_num < (I2C_BYTES)) {
-            // Sending ack
-            // Wait till SCL is low
-            while(I2C_READ_PIN(SCL_PIN));
+        if(I2C_SENT_ACK) {
+            while(I2C_READ_PIN(SCL_PIN));               // Wait till SCL is low
 
-            PIN_OUT_SET = 1 << SDA_PIN;
-            //PIN_OUT_CLEAR = 1 << SDA_PIN; 
+            PIN_OUT_SET = 1 << SDA_PIN; 
             GPIO_OUTPUT_SET(SDA_PIN, 0);
         }
 
 
-        i2c_byte_num++; 
+        i2c_byte_number++; 
 
     } else {
-        if((i2c_temp & 1) == 1) {
+        if((i2c_buffer & 1) == 1) {
             i2c_update_status(I2C_WRITING_BYTES);
             i2c_slave_writing_address(); 
             i2c_return_interrupt(); 
@@ -156,32 +163,24 @@ i2c_slave_reading_address() {
             gpio_output_set(0, 0, 0, GPIO_ID_PIN(SDA_PIN));
         }
 
-        i2c_buffer[i2c_byte_num] = i2c_temp; 
-        i2c_temp = 0; 
+        i2c_byte_buffer[i2c_byte_number] = i2c_buffer; 
+        i2c_buffer = 0; 
         i2c_bit_number = 7; 
     }
 
-    uint32 gpio_status;
-    gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
-    //clear interrupt status
-    GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, gpio_status);
-
-    ETS_GPIO_INTR_ENABLE(); // Enable gpio interrupts
+    i2c_return_interrupt(); 
 }
 
 static void ICACHE_FLASH_ATTR
 i2c_slave_writing_address()
 {
     ETS_GPIO_INTR_DISABLE(); // Disable gpio interrupts
-    clockpulses++; 
-
-    uint8_t status_byte = 0xAB; 
+    clockpulses++;
 
     if(i2c_bit_number == 8) while(I2C_READ_PIN(SCL_PIN));              // Wait till SCL is low...
 
-
     if(i2c_bit_number > 0) {
-        I2C_SDA_SET((status_byte & (1 << (i2c_bit_number - 1)))); 
+        I2C_SDA_SET((wifi_status & (1 << (i2c_bit_number - 1)))); 
     } else if(i2c_bit_number == 0) {
         PIN_DIR_INPUT = 1 << SDA_PIN; 
         gpio_output_set(0, 0, 0, GPIO_ID_PIN(SDA_PIN));
@@ -189,12 +188,7 @@ i2c_slave_writing_address()
 
     i2c_bit_number--;
 
-    uint32 gpio_status;
-    gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
-    //clear interrupt status
-    GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, gpio_status);
-
-    ETS_GPIO_INTR_ENABLE(); // Enable gpio interrupts
+    i2c_return_interrupt(); 
 }
 
 static void ICACHE_FLASH_ATTR
@@ -208,33 +202,6 @@ i2c_return_interrupt()
     ETS_GPIO_INTR_ENABLE(); // Enable gpio interrupts
 }
 
-static void ICACHE_FLASH_ATTR
-i2c_slave_reading_start() {
-    ETS_GPIO_INTR_DISABLE(); // Disable gpio interrupts
-
-    if(I2C_READ_PIN(SCL_PIN)) 
-    {
-        // // Okay start reading...
-        // ETS_GPIO_INTR_ATTACH(i2c_slave_reading_address, SCL_PIN);             // GPIO2 interrupt handler
-        // //gpio_output_set(0, 0, 0, GPIO_ID_PIN(SCL_PIN));                       // Set GPIO2 as input
-        // gpio_pin_intr_state_set(SCL_PIN, 1);                       // Interrupt on positive edge
-
-        // gpio_pin_intr_state_set(SDA_PIN, 0);
-
-        i2c_update_status(I2C_READING_ADDRESS); 
-
-    } else {
-        //os_printf("Not a start condition\n");
-    }
-
-    uint32 gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
-    //clear interrupt status
-    GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, gpio_status);
-
-
-    ETS_GPIO_INTR_ENABLE(); // Enable gpio interrupts
-}
-
 void ICACHE_FLASH_ATTR
 print_debug_info(void *arg) // in Arduino this is loop the main loop
 {
@@ -242,7 +209,7 @@ print_debug_info(void *arg) // in Arduino this is loop the main loop
     if(clockpulses != 0) {
         os_printf("DEBUG, count: %d, clockpulses: %d\n", i2c_bit_number, clockpulses);
 
-        os_printf("BUFFER: %d, %d, %d \n", i2c_buffer[0], i2c_buffer[1], i2c_buffer[2]);
+        os_printf("BUFFER: %d, %d, %d \n", i2c_byte_buffer[0], i2c_byte_buffer[1], i2c_byte_buffer[2]);
     }
 
 
@@ -257,7 +224,7 @@ print_debug_info(void *arg) // in Arduino this is loop the main loop
 
     i2c_update_status(I2C_READING_START);
 
-    os_memset(&i2c_buffer[0], 0, sizeof(i2c_buffer));
+    os_memset(&i2c_byte_buffer[0], 0, sizeof(i2c_byte_buffer));
 
     //i2c_slave_intr_init(); 
 
@@ -298,7 +265,7 @@ i2c_slave_init(void)
     gpio_output_set(0, 0, 0, GPIO_ID_PIN(2));
 
 
-    i2c_byte_num = 0; 
+    i2c_byte_number = 0; 
 
     user_i2c_debug(); 
 

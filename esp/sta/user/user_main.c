@@ -36,11 +36,19 @@ os_install_putc1((void *)uart1_write_char);
 #include "user_i2c.h"
 #include "user_interface.h"
 
+#include "user_config.h"
+
 #include "i2c_slave.h"
 
 //#include "espconn.h"
 //#include "mem.h"
 //#include "driver/uart.h"
+
+#define WIFI_BUSY 0x01
+#define WIFI_READY 0x02
+
+uint8_t wifi_status;
+
 
 static char hwaddr[6];
 #define MACSTR "%02x:%02x:%02x:%02x:%02x:%02x"
@@ -63,6 +71,10 @@ static volatile os_timer_t some_timer;
 
 volatile uint16_t count; 
 volatile uint16_t x; 
+
+
+
+
 
 
 static void ICACHE_FLASH_ATTR 
@@ -99,6 +111,7 @@ LOCAL void event_cb(System_Event_t *event) {
     case EVENT_STAMODE_AUTHMODE_CHANGE:
         os_printf("Event: EVENT_STAMODE_AUTHMODE_CHANGE\n");
     case EVENT_STAMODE_GOT_IP:
+        wifi_status = WIFI_READY;               // For i2c slave to respond
         os_printf("Event: EVENT_STAMODE_GOT_IP\n");
         user_tcpclient_init(); 
         break;
@@ -123,6 +136,8 @@ void user_init(void)
 
     // ESP8266 station mode init.
     user_sta_init();
+
+    wifi_status = WIFI_BUSY; 
 
 
     //user_uart_init(); 
