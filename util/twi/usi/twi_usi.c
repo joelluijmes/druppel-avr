@@ -135,19 +135,23 @@ TWRESULT usi_init_slave(uint8_t slave_addr)
     return usi_wait();
 }
 
-TWRESULT usi_init_master(uint8_t slave_addr, uint8_t transmitting)
+void usi_init_master()
 {
     SCL_HIGH();
     SDA_HIGH();
-    
+        
     SCL_OUTPUT();
     SDA_OUTPUT();
 
     USIDR = 0xFF;
     USICR = CR_RESET;                                   // TWI Mode | Software Strobe Clock
     USISR = SR_RESET;                                   // Clear flags
+}
 
+TWRESULT usi_start_master(uint8_t slave_addr, uint8_t transmitting)
+{
     start_condition();
+    
     if ((USISR & (1 << USISIF)) == 0)                   // Checks start condition :)
         return 0;
 
@@ -163,14 +167,21 @@ uint8_t usi_write_master(uint8_t data)
     // WRITE DATA
     SCL_LOW();                                          
     USIDR = data;                                       // Set data to send
+    SDA_HIGH();
     WAIT_TRANSFER_8BIT();                               // Wait transfer of 8 bits (data)
-    
+    SDA_OUTPUT();                                       // Claim SDA
+    USIDR = 0xFF;
+    SDA_OUTPUT();
+
     // READ ACK
     SDA_INPUT();                                        // Receive input from slave
     WAIT_TRANSFER_1BIT();                               // Wait transfer of a bit (ACK bit)
     SDA_OUTPUT();                                       // Claim SDA 
+    uint8_t tmp = USIDR;
+    USIDR = 0xFF;
+    SDA_OUTPUT();
 
-    return USIDR;
+    return tmp;
 }
 
 uint8_t usi_write_slave(uint8_t data)
@@ -249,5 +260,5 @@ static void start_condition()
     SDA_LOW();                                          // Data low
     _delay_us(T4_TWI/4);                                // Wait falling
     SCL_LOW();                                          // Clock low
-    SDA_HIGH();                                         // Data high
+    //SDA_HIGH();                                         // Data high
 }
