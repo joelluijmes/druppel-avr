@@ -24,9 +24,8 @@ int main()
 	while (twi_mt_start(0x08) != TWST_OK)
 	{
 		printf("Failed: %x\n", TW_STATUS);
-		twi_stop();
-		puts("No ACK (Enter to continue)");
-		getchar();
+		//twi_stop();
+		_delay_ms(100);
 	}
 
 	printf("Enter char to send: ");

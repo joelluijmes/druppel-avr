@@ -21,11 +21,18 @@
 #define CR_RESET (1 << USIWM1 | 1 << USICS1 | 1 << USICLK)
 #define CR_TICK (1 << USIWM1 | 1 << USICS1 | 1 << USICLK | 1 << USITC)
 
-#define SYS_CLK   1000.0  // [kHz]
-
 // Atmel stuff (AVR310)
-#define T2_TWI    ((SYS_CLK *4700) /1000000) +1 // >4,7us
-#define T4_TWI    ((SYS_CLK *4000) /1000000) +1 // >4,0us
+#define TWI_FAST_MODE
+
+#define SYS_CLK   4000.0  // [kHz]
+
+#ifdef TWI_FAST_MODE               // TWI FAST mode timing limits. SCL = 100-400kHz
+    #define T2_TWI    ((SYS_CLK *1300) /1000000) +1 // >1,3us
+    #define T4_TWI    ((SYS_CLK * 600) /1000000) +1 // >0,6us
+#else                              // TWI STANDARD mode timing limits. SCL <= 100kHz
+    #define T2_TWI    ((SYS_CLK *4700) /1000000) +1 // >4,7us
+    #define T4_TWI    ((SYS_CLK *4000) /1000000) +1 // >4,0us
+#endif
 
 #define SET_USI_TO_SEND_ACK()                                                                          \
 {                                                                                                      \
@@ -233,7 +240,11 @@ static void start_condition()
 
     SCL_HIGH();                                         // Set clock high
     while (!IS_SCL_HIGH()) ;                            // Wait for it
-    _delay_us(T2_TWI/4);                                // Wait rising
+    #ifdef TWI_FAST_MODE
+    _delay_us( T4_TWI/4 );                              // Delay for T4TWI if TWI_FAST_MODE
+    #else
+    _delay_us( T2_TWI/4 );                              // Delay for T2TWI if TWI_STANDARD_MODE
+    #endif                                              // Wait rising
 
     SDA_LOW();                                          // Data low
     _delay_us(T4_TWI/4);                                // Wait falling
