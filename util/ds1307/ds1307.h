@@ -1,7 +1,7 @@
 #pragma once
 
 #include <avr/io.h>
-#include "../twi/twi.h"
+#include "../twi/twi_module.h"
 
 #define DS1307_CTRL_ID 0x68
 #define SECONDS_FROM_1970_TO_2000 946684800

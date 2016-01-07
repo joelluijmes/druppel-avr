@@ -36,6 +36,8 @@ static DS1307 read_ds1307()
 	time.month 	= bcd2dec(twi_read());
 	time.year 	= bcd2dec(twi_read());
 
+	twi_stop(); 
+
     return time;
 }
 

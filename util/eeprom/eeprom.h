@@ -12,5 +12,4 @@
 uint8_t eeprom_read_address(uint16_t address);
 void eeprom_read_page_address(uint16_t address, uint8_t* buf, uint8_t buflen);
 void eeprom_write_address(uint16_t address, uint8_t byte);
-void eeprom_write_page_address(uint16_t address, uint8_t* buf, uint8_t buflen);s
-uint8_t eeprom_get_ctrl_id();
+void eeprom_write_page_address(uint16_t address, uint8_t* buf, uint8_t buflen);

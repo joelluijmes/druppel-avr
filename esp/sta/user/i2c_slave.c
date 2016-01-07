@@ -44,8 +44,11 @@ volatile uint32 stime;
 
 #define I2C_BYTES 2
 
-#define SDA_PIN 0x02
-#define SCL_PIN 0x00
+// #define SDA_PIN 0x02
+// #define SCL_PIN 0x00
+
+#define SDA_PIN 0x05
+#define SCL_PIN 0x04
 
 static uint8_t i2c_status;
 
@@ -74,7 +77,6 @@ void i2c_update_status(uint8_t status)
     switch(status) 
     {
         case I2C_READING_START:
-            i2c_status = I2C_READING_START;
             ETS_GPIO_INTR_ATTACH(i2c_interupt_reading_start, SDA_PIN);      // GPIO2 interrupt handler
             gpio_pin_intr_state_set(SDA_PIN, 2);                            // Interrupt on negative edge
 
@@ -83,13 +85,11 @@ void i2c_update_status(uint8_t status)
             i2c_byte_num = 0; 
             break;
         case I2C_READING_ADDRESS:
-            i2c_status = I2C_READING_START;
             ETS_GPIO_INTR_ATTACH(i2c_interupt_reading_address, SCL_PIN);      // GPIO2 interrupt handler
             gpio_pin_intr_state_set(SCL_PIN, 1);                            // Interrupt on positive edge
             i2c_bit_number = 7; 
             break;
         case I2C_READING_BYTES:
-            i2c_status = I2C_READING_BYTES;
             ETS_GPIO_INTR_ATTACH(i2c_interupt_reading_address, SCL_PIN);      // GPIO2 interrupt handler
             gpio_pin_intr_state_set(SCL_PIN, 1);                            // Interrupt on positive edge
             i2c_bit_number = 7; 
@@ -112,12 +112,17 @@ void i2c_interupt_reading_address() {
         i2c_bit_number--; 
 
 
-
-        
         if(i2c_status == I2C_READING_ADDRESS) {
             if(i2c_temp != 0xAA) {
-                os_printf("Reading restart %d \n", i2c_temp);
+                os_printf("Reading restart, received address: %d, 0x%\n", i2c_temp);
                 i2c_update_status(I2C_READING_START);
+                uint32 gpio_status;
+                gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
+                //clear interrupt status
+                GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, gpio_status);
+
+                return; 
+
             } else {
                 i2c_update_status(I2C_READING_BYTES);
             }
@@ -140,10 +145,8 @@ void i2c_interupt_reading_address() {
     } else {
         while(i2c_read_pin(SCL_PIN));
         //ets_delay_us(5); 
-        //if(i2c_byte_num < I2C_BYTES) {
         PIN_DIR_INPUT = 1 << SDA_PIN; 
         gpio_output_set(0, 0, 0, GPIO_ID_PIN(SDA_PIN));
-        //}
 
         i2c_bit_number = 7; 
     }
