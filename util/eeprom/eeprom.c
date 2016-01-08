@@ -18,6 +18,7 @@ uint16_t eeprom_get_address()
 
 void eeprom_set_address(uint16_t address) 
 {
+	uint8_t buffer[2];
 	buffer[0] = (uint8_t) (address >> 8);
 	buffer[1] = (uint8_t) address;
 	eeprom_write_page_address(0x00, &buffer, 2);

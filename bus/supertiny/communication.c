@@ -1,6 +1,6 @@
 #include "communication.h"
 
-uint8_t communication_start()
+uint8_t communication_start(uint8_t slave_address)
 {
 
 	uint16_t last_address = eeprom_get_address();
@@ -15,56 +15,26 @@ uint8_t communication_start()
 
 	while(last_address > current_address )
 	{
+		while(!communication_ready)						// Wait until communication respond with ready
+			_delay_ms(100); 
+
 		eeprom_read_page_address(current_address, &buffer, 64);
-		uint8_t bytes = 64; 
+		uint8_t bytes_count = 64; 
 		if(last_address < (current_address + 64))
-			bytes = last_address - current_address; 		// Bytes to sent...
+			bytes_count = last_address - current_address; 				// Number of bytes to sent...
 
-		//TODO sent bytes...
-		
-
-		
-	
+		if(current_address == 0x00)
+			communication_sent_bytes(COMMUNICATION_ADDRESS_WIFI, &buffer[0x10], bytes_count);
+		else
+			communication_sent_bytes(COMMUNICATION_ADDRESS_WIFI, &buffer, bytes_count);
 
 		current_address += 64; 
 	}
-	
-	_delay_ms(10);
-	uint8_t buff[64]; 
-	for(uint8_t i = 0; i < 64; i++)
-		buff[i] = 255; 
-	eeprom_write_page_address(0x00, &buff, 64);
-	_delay_ms(10);
-	eeprom_read_page_address(0x00, &buff, 64);
 
-
-
-		twi_write(0x02);												// Sending reading command
-
-	if (twi_mr_start(slave_address) != TWST_OK)
-		return 0;
-
-	uint8_t bytes = twi_read();										// Read how many bytes there must be sent 
-	bytes = 3; 
-
-	uint8_t i = 0; 
-	while(i < bytes && i < SENSORS_RECEIVE_BUFFER_SIZE)
-	{
-		receive_buffer[i] = twi_read(); 
-		i++; 
-	}
-	twi_stop(); 													// All bytes received, sending stop condition.
-
-
-	_delay_us(100);
-	// Writing data to eeprom
-	total_written_bytes += write_sensor_eeprom(uint8_txtime, slave_address, &receive_buffer, bytes);
-
-	return READING_DONE; 
-
+	eeprom_set_address(0x10);			//Writing all bytes to communication line is done so set our new pointer in eeprom
 }
 
-uint8_t communication_status(uint8_t slave_address)
+uint8_t communication_ready(uint8_t slave_address)
 {
 	if (twi_mr_start(slave_address) != TWST_OK)
 		return 0;
@@ -73,5 +43,17 @@ uint8_t communication_status(uint8_t slave_address)
 	
 	twi_stop(); 
 
-	return status; 
+	return status == STATUS_READY;
+}
+
+void communication_sent_bytes(uint8_t slave_address, uint8_t* buf, uint8_t buflen)
+{
+	if (twi_mt_start(slave_address) != TWST_OK)
+		return;
+
+	for(uint8_t i = 0; i < buflen; i++)
+		twi_write(buf[i]); 
+
+	twi_stop();
+	_delay_ms(10);
 }

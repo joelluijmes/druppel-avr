@@ -9,9 +9,6 @@
 #include "sensors.h"
 #include "communication.h"
 
-
-#define COMMUNICATION_ADDRESS_WIFI 0x10
-
 FILE mystdout = FDEV_SETUP_STREAM(uart_putchar, NULL, _FDEV_SETUP_WRITE);
 
 int main()
@@ -25,13 +22,13 @@ int main()
 
 
 
-	uint32_t unixtime = read_unix_time();
-	//sensors_check(); 
+	// uint32_t unixtime = read_unix_time();
+	sensors_check(); 
 
 
 
 	_delay_ms(10);
-	uint8_t buff[64]; 
+	// uint8_t buff[64]; 
 	// for(uint8_t i = 0; i < 64; i++)
 	// 	buff[i] = 255; 
 	// eeprom_write_page_address(0x00, &buff, 64);
@@ -40,8 +37,7 @@ int main()
 
 
 
-	//communication_start(COMMUNICATION_ADDRESS_WIFI); 
-
-
+	uint8_t status = communication_status(0x10); 
+	printf("%d\n", status);
 
 }

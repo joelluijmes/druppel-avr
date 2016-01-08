@@ -6,7 +6,7 @@ CCFLAGS = -Wall -Os -mmcu=atmega328p -DF_CPU=16000000UL -DBAUD=57600 -std=c99
 OBJCOPYFLAGS = -O ihex
 DUDEFLAGS = -p atmega328p -b 57600 -c arduino -D -P /./COM7 
 
-SOURCES = main.c ../../util/twi/twi_module.c ../../util/uart/uart.c ../../util/ds1307/ds1307.c ../../util/eeprom/eeprom.c sensors.c 
+SOURCES = main.c ../../util/twi/twi_module.c ../../util/uart/uart.c ../../util/ds1307/ds1307.c ../../util/eeprom/eeprom.c sensors.c communication.c
 
 COMPILED = firmware.hex
 LINKED = firmware.o
