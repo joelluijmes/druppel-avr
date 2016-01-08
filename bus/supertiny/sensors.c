@@ -1,20 +1,20 @@
 #include "sensors.h"
 
-uint16_t data_address; 
 uint8_t total_written_bytes;
 
 static state sensor_start_measure(uint8_t slave_address);
 static state sensor_start_reading(uint8_t slave_address, uint32_t unixtime);
+static uint8_t write_sensor_eeprom(uint32_t unixtime, uint8_t sensor_id, uint8_t* buf, uint8_t buflen);
 
 uint8_t sensors_check()
 {
 	total_written_bytes = 0; 
 	state states[SENSORS_ADDRESS_SIZE] = {};
-	// There are devices so get the current time. 
-	uint32_t unixtime = read_unix_time();
+
+	uint32_t unixtime = read_unix_time();					// Get the current unixtime to store in eeprom 
 
 	uint8_t done = false; 
-	while(!done) // todo 
+	while(!done)
 	{
 		done = true;
 
@@ -47,13 +47,11 @@ uint8_t sensors_check()
 
 	if(total_written_bytes) {
 		_delay_us(100);
-		uint8_t buffer[2];
-		data_address = sensors_get_eeprom_address() + total_written_bytes;
-		buffer[0] = (uint8_t) (data_address >> 8);
-		buffer[1] = (uint8_t) data_address;
-
-		eeprom_write_page_address(0x00, &buffer, 2); 				// Update new address; 
+		
+		eeprom_set_address(eeprom_get_address() + total_written_bytes); // Set new eeprom address
 	}
+
+	return 0;
 }
 
 static state sensor_start_measure(uint8_t slave_address)
@@ -91,13 +89,13 @@ static state sensor_start_reading(uint8_t slave_address, uint32_t unixtime)
 
 	_delay_us(100);
 	// Writing data to eeprom
-	total_written_bytes += write_sensor_eeprom(unixtime, slave_address, &receive_buffer, bytes);
+	total_written_bytes += write_sensor_eeprom(unixtime, slave_address, (uint8_t*) &receive_buffer, bytes);
 
 	return READING_DONE; 
 }
 
 
-uint8_t write_sensor_eeprom(uint32_t unixtime, uint8_t sensor_id, uint8_t* buf, uint8_t buflen)
+static uint8_t write_sensor_eeprom(uint32_t unixtime, uint8_t sensor_id, uint8_t* buf, uint8_t buflen)
 {
 	// DATA: sensor_id(1), timestamp(4), length(1), data(buflen)
 	uint8_t datasize = SENSORS_RECEIVE_BUFFER_SIZE + 6;
@@ -110,26 +108,7 @@ uint8_t write_sensor_eeprom(uint32_t unixtime, uint8_t sensor_id, uint8_t* buf, 
 	buffer[5] = buflen; 
 	for(uint8_t i = 0; i < buflen; i++)
 		buffer[6 + i] = buf[i];
-	eeprom_write_page_address(sensors_get_eeprom_address(), &buffer, 6 + buflen);
+	eeprom_write_page_address(eeprom_get_address(), (uint8_t*) &buffer, 6 + buflen);
 
 	return 6 + buflen; 
-}
-
-uint16_t sensors_get_eeprom_address() 
-{
-	if(data_address == 0) 				// not initialized
-	{
-		// First 2 bytes are used to keep the last written address
-		uint8_t buffer[2]; 
-		eeprom_read_page_address(0x00, &buffer, 2);
-		data_address = buffer[0] << 8 | buffer[1];
-		if(data_address == 65535)
-		{
-			buffer[0] = 0;
-			buffer[1] = 0x10;
-			eeprom_write_page_address(0x00, &buffer, 2);
-			data_address = 0x10; 
-		}
-	}
-	return data_address; 
 }

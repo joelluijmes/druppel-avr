@@ -25,5 +25,5 @@ enum state
 typedef enum state state;
 
 uint8_t sensors_check();
-uint8_t write_sensor_eeprom(uint32_t unixtime, uint8_t sensor_id, uint8_t* buf, uint8_t buflen);
-uint16_t sensors_get_eeprom_address();
+// uint8_t write_sensor_eeprom(uint32_t unixtime, uint8_t sensor_id, uint8_t* buf, uint8_t buflen);
+// uint16_t sensors_get_eeprom_address();

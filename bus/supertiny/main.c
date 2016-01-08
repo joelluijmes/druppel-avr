@@ -26,8 +26,7 @@ int main()
 	sensors_check(); 
 
 
-
-	_delay_ms(10);
+	// _delay_ms(10);
 	// uint8_t buff[64]; 
 	// for(uint8_t i = 0; i < 64; i++)
 	// 	buff[i] = 255; 
@@ -37,7 +36,7 @@ int main()
 
 
 
-	uint8_t status = communication_status(0x10); 
+	uint8_t status = communication_start(0x10); 
 	printf("%d\n", status);
 
 }
