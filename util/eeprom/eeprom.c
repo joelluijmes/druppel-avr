@@ -52,8 +52,9 @@ void eeprom_read_page_address(uint16_t address, uint8_t* buf, uint8_t buflen)
 	if (twi_mr_start(eeprom_get_ctrl_id()) != TWST_OK)
 		return;
 
-	for(uint8_t i = 0; i < buflen; i++)
+	for(uint8_t i = 0; i < (buflen - 1); i++)
 		buf[i] = twi_read(); 
+	buf[buflen - 1] = twi_peek(); 
 
 	twi_stop();
 }

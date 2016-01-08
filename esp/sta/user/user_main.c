@@ -138,6 +138,7 @@ void user_init(void)
     user_sta_init();
 
     wifi_status = WIFI_BUSY; 
+    //wifi_status = WIFI_READY; 
 
 
     //user_uart_init(); 

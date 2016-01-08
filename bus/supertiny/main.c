@@ -18,12 +18,16 @@ int main()
 	sei();
 	DDRB = 0x20;
 
+	PORTC = 1 << 4 | 1 << 5;
+
 	twi_master_init();
+
+	twi_stop(); 
 
 
 
 	// uint32_t unixtime = read_unix_time();
-	sensors_check(); 
+	//sensors_check(); 
 
 
 	// _delay_ms(10);
@@ -36,7 +40,7 @@ int main()
 
 
 
+
 	uint8_t status = communication_start(0x10); 
 	printf("%d\n", status);
-
 }

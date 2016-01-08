@@ -36,7 +36,7 @@ uint8_t communication_start(uint8_t slave_address)
 		current_address += 64; 
 	}
 
-	eeprom_set_address(0x10);			//Writing all bytes to communication line is done so set our new pointer in eeprom
+	//eeprom_set_address(0x10);			//Writing all bytes to communication line is done so set our new pointer in eeprom
 	return 1; 
 }
 
@@ -45,7 +45,7 @@ static uint8_t communication_ready(uint8_t slave_address)
 	if (twi_mr_start(slave_address) != TWST_OK)
 		return 0; 
 
-	uint8_t status = twi_read(); 
+	uint8_t status = twi_peek(); 
 	
 	twi_stop(); 
 
