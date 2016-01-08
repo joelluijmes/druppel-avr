@@ -49,43 +49,15 @@ os_install_putc1((void *)uart1_write_char);
 
 uint8_t wifi_status;
 
-
 static char hwaddr[6];
 #define MACSTR "%02x:%02x:%02x:%02x:%02x:%02x"
 #define MAC2STR(a) (a)[0], (a)[1], (a)[2], (a)[3], (a)[4], (a)[5]
 
-extern volatile uint32_t PIN_OUT;
-extern volatile uint32_t PIN_OUT_SET;
-extern volatile uint32_t PIN_OUT_CLEAR;
-
-extern volatile uint32_t PIN_DIR;
-extern volatile uint32_t PIN_DIR_OUTPUT;
-extern volatile uint32_t PIN_DIR_INPUT;
-
-extern volatile uint32_t PIN_IN;
-
-extern volatile uint32_t PIN_0;
-extern volatile uint32_t PIN_2;
-
-static volatile os_timer_t some_timer;
-
-volatile uint16_t count; 
-volatile uint16_t x; 
-
-
-
-
-
 
 static void ICACHE_FLASH_ATTR 
 init_done_cb() {
-    // 1010 1011 = 0xAB
 
-
-    i2c_slave_init(); 
-
-    //user_i2c_slave_init(); 
-
+    i2c_slave_init();
     //user_i2c_init();
 
 
@@ -137,12 +109,11 @@ void user_init(void)
     // ESP8266 station mode init.
     user_sta_init();
 
-    wifi_status = WIFI_BUSY; 
-    //wifi_status = WIFI_READY; 
+    // wifi_status = WIFI_BUSY; 
+    wifi_status = WIFI_READY; 
 
 
     //user_uart_init(); 
-    //gpio_init(); 
 
     system_init_done_cb(init_done_cb);
     wifi_set_event_handler_cb(event_cb);

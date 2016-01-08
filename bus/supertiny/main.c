@@ -22,8 +22,6 @@ int main()
 
 	twi_master_init();
 
-	twi_stop(); 
-
 
 
 	// uint32_t unixtime = read_unix_time();
@@ -31,9 +29,9 @@ int main()
 
 
 	// _delay_ms(10);
-	// uint8_t buff[64]; 
-	// for(uint8_t i = 0; i < 64; i++)
-	// 	buff[i] = 255; 
+	uint8_t buff[64]; 
+	for(uint8_t i = 0; i < 64; i++)
+		buff[i] = 0xAB; //255; 
 	// eeprom_write_page_address(0x00, &buff, 64);
 	// _delay_ms(10);
 	//eeprom_read_page_address(0x00, &buff, 64);
@@ -43,4 +41,20 @@ int main()
 
 	uint8_t status = communication_start(0x10); 
 	printf("%d\n", status);
+
+
+
+	// while(1)
+	// {
+	// 	_delay_ms(500);
+	// 	if (twi_mt_start(0x10) != TWST_OK)
+	// 		continue;
+
+	// 	twi_write(2); 
+	// 	for(uint8_t i = 0; i < 2; i++)
+	// 		twi_write(buff[i]); 
+
+	// 	twi_stop();
+	// }
+
 }

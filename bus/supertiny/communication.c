@@ -21,7 +21,7 @@ uint8_t communication_start(uint8_t slave_address)
 	while(last_address > current_address )
 	{
 		while(!communication_ready(COMMUNICATION_ADDRESS_WIFI))			// Wait until communication respond with ready
-			_delay_ms(100); 
+			_delay_ms(500); 
 
 		eeprom_read_page_address(current_address, (uint8_t*) &buffer, 64);
 		uint8_t bytes_count = 64; 
@@ -54,12 +54,15 @@ static uint8_t communication_ready(uint8_t slave_address)
 
 static void communication_sent_bytes(uint8_t slave_address, uint8_t* buf, uint8_t buflen)
 {
+	_delay_ms(1); 
 	if (twi_mt_start(slave_address) != TWST_OK)
 		return;
+
+	twi_write(buflen); 								// Sending count bytes
 
 	for(uint8_t i = 0; i < buflen; i++)
 		twi_write(buf[i]); 
 
 	twi_stop();
-	_delay_ms(10);
+	_delay_ms(1);
 }
