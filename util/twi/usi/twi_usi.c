@@ -104,7 +104,7 @@ TWRESULT usi_wait()
         while ((USISR & (1 << USISIF)) == 0) ;              // Wait for USI to detect the start condition
         SDA_INPUT();                                        // Data as input -> to receive slave address
 
-        while (IS_SCL_HIGH() && !(SDA_HIGH())) ;            // Be sure start condition was completed
+        while (IS_SCL_HIGH() && !(IS_SDA_HIGH())) ;            // Be sure start condition was completed
 
         USICR = (IS_SDA_HIGH())                             // Check if we received start of stop condition
             ? 1 << USISIE | 1 << USIWM1 | 1 << USIWM0 | 1 << USICS1                 // stop condition
