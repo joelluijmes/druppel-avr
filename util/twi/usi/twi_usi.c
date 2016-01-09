@@ -27,24 +27,24 @@
 #define SYS_CLK   4000.0  // [kHz]
 
 #ifdef TWI_FAST_MODE               // TWI FAST mode timing limits. SCL = 100-400kHz
-    #define T2_TWI    ((SYS_CLK *1300) /1000000) +1 // >1,3us
-    #define T4_TWI    ((SYS_CLK * 600) /1000000) +1 // >0,6us
+#define T2_TWI    ((SYS_CLK *1300) /1000000) +1 // >1,3us
+#define T4_TWI    ((SYS_CLK * 600) /1000000) +1 // >0,6us
 #else                              // TWI STANDARD mode timing limits. SCL <= 100kHz
-    #define T2_TWI    ((SYS_CLK *4700) /1000000) +1 // >4,7us
-    #define T4_TWI    ((SYS_CLK *4000) /1000000) +1 // >4,0us
+#define T2_TWI    ((SYS_CLK *4700) /1000000) +1 // >4,7us
+#define T4_TWI    ((SYS_CLK *4000) /1000000) +1 // >4,0us
 #endif
 
 #define SET_USI_TO_SEND_ACK()                                                                          \
 {                                                                                                      \
-    USIDR = 0;                                                          /* Prepare ACK */              \
     SDA_OUTPUT();                                                       /* Set SDA as output */        \
+    USIDR = 0;                                                          /* Prepare ACK */              \
     USISR = (1 << USIOIF | 1 << USIPF | 1 << USIDC | 0x0E << USICNT0);  /* Clear flags | count 1 bit*/ \
 }
 
 #define SET_USI_TO_READ_ACK()                                                                          \
 {                                                                                                      \
-    SDA_INPUT();                                                        /* Set SDA as intput */        \
     USIDR = 0;                                                          /* Prepare ACK */              \
+    SDA_INPUT();                                                        /* Set SDA as intput */        \
     USISR = (1 << USIOIF | 1 << USIPF | 1 << USIDC | 0x0E << USICNT0);  /* Clear flags | count 1 bit*/ \
 }
 
@@ -83,8 +83,8 @@
 {                                                                                                      \
     USISR = SR_SHIFT1;                          /* Count one bit (2 edges) */                          \
     WAIT_TRANSFER();                                                                                   \
-}                                                                                                      
-                                                                                                       
+}
+    
 #define WAIT_TRANSFER_8BIT()                                                                           \
 {                                                                                                      \
     USISR = SR_SHIFT8;                          /* Count one bit (2 edges) */                          \
@@ -107,8 +107,8 @@ TWRESULT usi_wait()
         while (IS_SCL_HIGH() && !(IS_SDA_HIGH())) ;            // Be sure start condition was completed
 
         USICR = (IS_SDA_HIGH())                             // Check if we received start of stop condition
-            ? 1 << USISIE | 1 << USIWM1 | 1 << USIWM0 | 1 << USICS1                 // stop condition
-            : 1 << USISIE | 1 << USIOIE | 1 << USIWM1 | 1 << USIWM0 | 1 << USICS1;  // start condition
+        ? 1 << USISIE | 1 << USIWM1 | 1 << USIWM0 | 1 << USICS1                 // stop condition
+        : 1 << USISIE | 1 << USIOIE | 1 << USIWM1 | 1 << USIWM0 | 1 << USICS1;  // start condition
 
         USISR = SR_RESET;                                   // Reset flags
 
@@ -116,22 +116,24 @@ TWRESULT usi_wait()
     } while (USIDR != 0 && (USIDR >> 1) != _address);       // Repeat as long we are not addressed by the master
 
     TWRESULT result = (USIDR & 0x01)                       // Check if we are transmitting or receiving slave
-        ? TWST_SL_RECEIVING
-        : TWST_SL_TRANSMITTING;
+        ? TWST_SL_TRANSMITTING
+        : TWST_SL_RECEIVING;
 
-    SET_USI_TO_SEND_ACK();                                  // Send the acknowledge 
+    SET_USI_TO_SEND_ACK();                                  // Send the acknowledge
     return result;
 }
 
 TWRESULT usi_init_slave(uint8_t slave_addr)
 {
     _address = slave_addr;
-    // Not sure what initial values should be used but these seem to work best :D
-    SCL_LOW();
-    SDA_LOW();
-    SCL_INPUT();
+    // Okay these need to be used :D
+    SDA_OUTPUT();
+    SCL_OUTPUT();
+    SCL_HIGH();
+    SDA_HIGH();
     SDA_INPUT();
 
+    USISR = SR_RESET;
     return usi_wait();
 }
 
@@ -151,21 +153,21 @@ void usi_init_master()
 TWRESULT usi_start_master(uint8_t slave_addr, uint8_t transmitting)
 {
     start_condition();
-    
+        
     if ((USISR & (1 << USISIF)) == 0)                   // Checks start condition :)
-        return 0;
+    return 0;
 
     // Data is the slave address and the bit if we are sending or receiving
     uint8_t data = (slave_addr << 1) | (transmitting ? 0x00 : 0x01);
     return usi_write_master(data)
-        ? TWST_OK                              // Didn't receive ack :(
-        : TWST_MASTER_NACK;                      
+    ? TWST_OK                              // Didn't receive ack :(
+    : TWST_MASTER_NACK;
 }
 
 uint8_t usi_write_master(uint8_t data)
 {
     // WRITE DATA
-    SCL_LOW();                                          
+    SCL_LOW();
     USIDR = data;                                       // Set data to send
     SDA_HIGH();
     WAIT_TRANSFER_8BIT();                               // Wait transfer of 8 bits (data)
@@ -176,7 +178,7 @@ uint8_t usi_write_master(uint8_t data)
     // READ ACK
     SDA_INPUT();                                        // Receive input from slave
     WAIT_TRANSFER_1BIT();                               // Wait transfer of a bit (ACK bit)
-    SDA_OUTPUT();                                       // Claim SDA 
+    SDA_OUTPUT();                                       // Claim SDA
     uint8_t tmp = USIDR;
     USIDR = 0xFF;
     SDA_OUTPUT();
@@ -187,21 +189,15 @@ uint8_t usi_write_master(uint8_t data)
 uint8_t usi_write_slave(uint8_t data)
 {
     SLAVE_WAIT();                                       // Wait for bus to be ready
-
     USIDR = data;                                       // Sets data
+
     SET_USI_TO_SEND_DATA();                             // Issues USI to send data
-
+    
     SLAVE_WAIT();                                       // Wait again..
-    SET_USI_TO_READ_ACK();                              // Issues USI to read the ack 
+    SET_USI_TO_READ_ACK();                              // Issues USI to read the ack
 
-    SLAVE_WAIT();                                       // Waits once more..
-    if (USIDR)                                          // Checks ACK 
-    {
-        SET_USI_TO_TWI_START_CONDITION_MODE();          // ACK Received -> restart?
-        // goto: restart??
-    }
-
-    return !(USIDR & 0x01);                                      // Returns ACK received                                         
+    SLAVE_WAIT();
+    return !(USIDR & 0x01);                                      // Returns ACK received
 }
 
 uint8_t usi_read_master(uint8_t nack)
@@ -209,7 +205,7 @@ uint8_t usi_read_master(uint8_t nack)
     SDA_INPUT();
     WAIT_TRANSFER_8BIT();
     uint8_t data = USIDR;
-    
+        
     SDA_OUTPUT();
     USIDR = nack ? 0xFF : 0x00;
     WAIT_TRANSFER_1BIT();
@@ -223,7 +219,7 @@ uint8_t usi_read_slave()
     SET_USI_TO_READ_DATA();                             // Sets usi to start reading
 
     SLAVE_WAIT();                                       // Wait for read to complete
-    uint8_t data = USIDR;                               // Temporary hold data 
+    uint8_t data = USIDR;                               // Temporary hold data
     SET_USI_TO_SEND_ACK();                              // Send ACK
 
     return data;                                        // Returns the data
@@ -239,9 +235,9 @@ TWRESULT usi_stop()
     SDA_INPUT();                                        // Releases data
     while (!IS_SDA_HIGH()) ;
 
-    return (USISR & (1 << USIPF)) 
-        ? TWST_OK
-        : TWST_STOP_FAILED;                             // Returns true if stop succeeded
+    return (USISR & (1 << USIPF))
+    ? TWST_OK
+    : TWST_STOP_FAILED;                             // Returns true if stop succeeded
 }
 
 static void start_condition()
@@ -260,4 +256,5 @@ static void start_condition()
     SDA_LOW();                                          // Data low
     _delay_us(T4_TWI/4);                                // Wait falling
     SCL_LOW();                                          // Clock low
+    //SDA_HIGH();                                         // Data high
 }
