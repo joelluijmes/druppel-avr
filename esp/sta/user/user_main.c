@@ -61,10 +61,13 @@ init_done_cb() {
     //user_i2c_init();
 
 
-    // // Wifi connect to ap
-    // os_delay_us(3000*1000);
-    // wifi_station_disconnect();
-    // wifi_station_connect();
+    // Wifi connect to ap
+    os_delay_us(2000*1000);
+    //wifi_station_disconnect();
+    wifi_station_dhcpc_stop(); 
+    user_sta_setup_static_ip();
+    wifi_station_connect();
+
 
     //os_printf("autoconnect: %d ", wifi_station_get_auto_connect());
 }
@@ -76,9 +79,7 @@ LOCAL void event_cb(System_Event_t *event) {
         break;
     case EVENT_STAMODE_DISCONNECTED:
         os_printf("Event: EVENT_STAMODE_DISCONNECTED\n");
-        //os_printf("IP: %d.%d.%d.%d\n", IP2STR(&event->event_info.got_ip.ip));
         os_printf("Reason: %d\n", IP2STR(&event->event_info.disconnected.reason));
-
         break;
     case EVENT_STAMODE_AUTHMODE_CHANGE:
         os_printf("Event: EVENT_STAMODE_AUTHMODE_CHANGE\n");
@@ -109,9 +110,8 @@ void user_init(void)
     // ESP8266 station mode init.
     user_sta_init();
 
-    // wifi_status = WIFI_BUSY; 
-    wifi_status = WIFI_READY; 
-
+    wifi_status = WIFI_BUSY; 
+    //wifi_status = WIFI_READY; 
 
     //user_uart_init(); 
 

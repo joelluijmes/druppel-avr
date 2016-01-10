@@ -54,17 +54,8 @@ void ICACHE_FLASH_ATTR
 user_sta_setup_static_ip(void)
 {
     struct ip_info info; 
-    IP4_ADDR(&info.ip, 192, 168, 4, 2);
+    IP4_ADDR(&info.ip, 192, 168, 4, 1);
     IP4_ADDR(&info.gw, 192, 168, 4, 254);
     IP4_ADDR(&info.netmask, 255, 255, 255, 0);
     wifi_set_ip_info(STATION_IF, &info);
-}
-
-void ICACHE_FLASH_ATTR 
-user_softap_ipinfo(void) 
-{
-	struct ip_info info; 
-	wifi_get_ip_info(SOFTAP_IF, &info);
-	//os_printf("%d, %d, %d \n", info.ip.addr, info.netmask.addr, info.gw.addr); // Getting uint_32 values
-	os_printf("IP: " IPSTR " SUBNET: " IPSTR " GW: " IPSTR " \n", IP2STR(&info.ip), IP2STR(&info.netmask), IP2STR(&info.gw));
 }
