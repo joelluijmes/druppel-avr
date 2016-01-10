@@ -21,7 +21,7 @@ uint8_t communication_start(uint8_t slave_address)
 	while(last_address > current_address )
 	{
 		while(!communication_ready(COMMUNICATION_ADDRESS_WIFI))			// Wait until communication respond with ready
-			_delay_ms(500); 
+			_delay_ms(1500); 
 
 		eeprom_read_page_address(current_address, (uint8_t*) &buffer, 64);
 		uint8_t bytes_count = 64; 

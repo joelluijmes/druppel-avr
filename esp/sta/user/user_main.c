@@ -33,8 +33,8 @@ os_install_putc1((void *)uart1_write_char);
 //#include "user_uart.h"
 #include "user_sta.h"
 #include "user_tcpclient.h"
-#include "user_i2c.h"
 #include "user_interface.h"
+//#include "user_global_definitions.h"
 
 #include "user_config.h"
 
@@ -46,8 +46,8 @@ os_install_putc1((void *)uart1_write_char);
 
 #define WIFI_BUSY 0x01
 #define WIFI_READY 0x02
-
 uint8_t wifi_status;
+
 
 static char hwaddr[6];
 #define MACSTR "%02x:%02x:%02x:%02x:%02x:%02x"
@@ -57,17 +57,12 @@ static char hwaddr[6];
 static void ICACHE_FLASH_ATTR 
 init_done_cb() {
 
-    i2c_slave_init();
-    //user_i2c_init();
-
-
     // Wifi connect to ap
     os_delay_us(2000*1000);
     //wifi_station_disconnect();
     wifi_station_dhcpc_stop(); 
     user_sta_setup_static_ip();
     wifi_station_connect();
-
 
     //os_printf("autoconnect: %d ", wifi_station_get_auto_connect());
 }
@@ -85,8 +80,11 @@ LOCAL void event_cb(System_Event_t *event) {
         os_printf("Event: EVENT_STAMODE_AUTHMODE_CHANGE\n");
     case EVENT_STAMODE_GOT_IP:
         wifi_status = WIFI_READY;               // For i2c slave to respond
+
+        i2c_slave_init();
+
         os_printf("Event: EVENT_STAMODE_GOT_IP\n");
-        user_tcpclient_init(); 
+//        user_tcpclient_init(); 
         break;
     default:
         os_printf("Unexpected event: %d\n", event->event);
@@ -110,10 +108,18 @@ void user_init(void)
     // ESP8266 station mode init.
     user_sta_init();
 
-    wifi_status = WIFI_BUSY; 
+    wifi_status = WIFI_BUSY;
     //wifi_status = WIFI_READY; 
 
     //user_uart_init(); 
+
+    PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0);            // SET GPIO function, not uart...
+    PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_GPIO2);            // SET GPIO function, not uart...
+
+    // Setting I2C pins to input
+    gpio_output_set(0, 0, 0, GPIO_ID_PIN(0));
+    gpio_output_set(0, 0, 0, GPIO_ID_PIN(2));
+
 
     system_init_done_cb(init_done_cb);
     wifi_set_event_handler_cb(event_cb);
