@@ -39,6 +39,7 @@ static uint8_t i2c_status;
 void ICACHE_FLASH_ATTR 
 i2c_slave_init(void)
 {
+    os_printf("I2C: init\n");
     PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0);            // SET GPIO function, not uart...
     PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_GPIO2);            // SET GPIO function, not uart...
 
@@ -46,7 +47,7 @@ i2c_slave_init(void)
     gpio_output_set(0, 0, 0, GPIO_ID_PIN(0));
     gpio_output_set(0, 0, 0, GPIO_ID_PIN(2));
 
-    user_i2c_debug(); 
+    //user_i2c_debug(); 
 
     i2c_update_status(I2C_READING_START);   
 }
@@ -82,7 +83,6 @@ i2c_update_status(uint8_t status)
             ETS_GPIO_INTR_ATTACH(i2c_slave_reading_start, SDA_PIN);      // GPIO2 interrupt handler
             gpio_pin_intr_state_set(SDA_PIN, 2);                            // Interrupt on negative edge
 
-
             i2c_buffer = 0; 
             i2c_bit_number = 7; 
             break;
@@ -108,6 +108,7 @@ i2c_update_status(uint8_t status)
 static void
 i2c_slave_reading_address() {
     ETS_GPIO_INTR_DISABLE(); // Disable gpio interrupts
+
     clockpulses++; 
 
     //while(!I2C_READ_PIN(SCL_PIN));               // Wait till SCL is low
@@ -191,7 +192,7 @@ i2c_slave_writing_address()
         if(GPIO_INPUT_GET(SDA_PIN) > 0) {
             i2c_update_status(I2C_READING_START);           // Received NACK
             i2c_return_interrupt(); 
-            os_printf("Writing status done, received nack from master\n");
+            //os_printf("Writing status done, received nack from master\n");
             return; 
 
         } else {
@@ -219,9 +220,9 @@ void ICACHE_FLASH_ATTR
 print_debug_info(void *arg) // in Arduino this is loop the main loop
 {
     if(clockpulses != 0) {
-        // os_printf("DEBUG, count: %d, clockpulses: %d\n", i2c_bit_number, clockpulses);
+        os_printf("DEBUG, count: %d, clockpulses: %d\n", i2c_bit_number, clockpulses);
 
-        // os_printf("BUFFER: %d, %d, %d \n", i2c_byte_buffer[0], i2c_byte_buffer[1], i2c_byte_buffer[2]);
+        os_printf("BUFFER: %d, %d, %d \n", i2c_byte_buffer[0], i2c_byte_buffer[1], i2c_byte_buffer[2]);
     }
 
     clockpulses = 0; 
