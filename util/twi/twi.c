@@ -28,8 +28,11 @@ static uint8_t state = STATE_NONE;
 
 TWRESULT twi_master_send(uint8_t slaveaddr, uint8_t* buffer, uint8_t len)
 {
-	if(MT_START(slaveaddr) == TWST_OK)
+	if(MT_START(slaveaddr) != TWST_OK) 
+	{
+		MASTER_STOP();
 		return TWST_START_FAILED; 
+	}
 
 	for (uint8_t i = 0; i < len; ++i)
 		MASTER_WRITE(buffer[i]);
@@ -41,8 +44,11 @@ TWRESULT twi_master_send(uint8_t slaveaddr, uint8_t* buffer, uint8_t len)
 
 TWRESULT twi_master_read(uint8_t slaveaddr, uint8_t* buffer, uint8_t len)
 {
-	if(MR_START(slaveaddr) == TWST_OK)
+	if(MR_START(slaveaddr) != TWST_OK)
+	{
+		MASTER_STOP();
 		return TWST_START_FAILED;
+	}
 
 	for (uint8_t i = 0; i < (len -1); ++i)
 		buffer[i] = MASTER_READ(0);
