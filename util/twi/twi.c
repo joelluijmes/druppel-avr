@@ -1,5 +1,10 @@
 #include "twi.h"
 
+#define TRANSMIT 0x01
+#define RECEIVE 0x00
+#define NACK 0x01
+#define ACK 0x00
+
 #if defined (__AVR_ATmega328P__) || defined (__AVR_ATmega328__)
 	#include "avr/twi_mega.h"
 
@@ -12,8 +17,8 @@
 	#include "usi/twi_usi.h"
 
 	#define MASTER_INIT() ()	
-	#define MT_START(slaveaddr) (usi_start_master(slaveaddr, 0x01))
-	#define MR_START(slaveaddr) (usi_start_master(slaveaddr, 0x00))
+	#define MT_START(slaveaddr) (usi_start_master(slaveaddr, TRANSMIT))
+	#define MR_START(slaveaddr) (usi_start_master(slaveaddr, RECEIVE))
 	#define MASTER_WRITE(data) (usi_write_master(data))
 	#define MASTER_READ(nack) (usi_read_master(nack))
 	#define MASTER_STOP() (usi_stop())
@@ -21,35 +26,53 @@
 	#error "Device not supported"
 #endif
 
-#define STATE_NONE 0
-#define STATE_MASTER 1
-#define STATE_SLAVE 2
-static uint8_t state = STATE_NONE;
+static uint8_t _state = 0;
+#define CLOSED (1 << 0)
 
-TWRESULT twi_master_send(uint8_t slaveaddr, uint8_t* buffer, uint8_t len)
+TWRESULT twi_master_send(uint8_t slaveaddr, uint8_t* buffer, uint8_t len, uint8_t keepAlive)
 {
-	if(MT_START(slaveaddr) == TWST_OK)
-		return TWST_START_FAILED; 
+	if (_state & CLOSED)
+	{
+		if(MT_START(slaveaddr) == TWST_OK)
+		{
+			twi_close();
+			return TWST_START_FAILED; 
+		}
+	}
 
 	for (uint8_t i = 0; i < len; ++i)
 		MASTER_WRITE(buffer[i]);
 
-	MASTER_STOP();
+	if (!keepAlive)
+		twi_close();
 
 	return TWST_OK;
 }
 
-TWRESULT twi_master_read(uint8_t slaveaddr, uint8_t* buffer, uint8_t len)
+TWRESULT twi_master_receive(uint8_t slaveaddr, uint8_t* buffer, uint8_t len, uint8_t keepAlive)
 {
-	if(MR_START(slaveaddr) == TWST_OK)
-		return TWST_START_FAILED;
+	if (_state & CLOSED)
+	{
+		if(MR_START(slaveaddr) == TWST_OK)
+		{
+			twi_close();
+			return TWST_START_FAILED;
+		}
+	}
 
-	for (uint8_t i = 0; i < (len -1); ++i)
-		buffer[i] = MASTER_READ(0);
+	for (uint8_t i = 0; i < len - 1; ++i)
+		buffer[i] = MASTER_READ(ACK);
 
-	buffer[len -1] = MASTER_READ(1); 
+	buffer[len - 1] = MASTER_READ(NACK); 
 
-	MASTER_STOP();
+	if (!keepAlive)
+		twi_close();
 
 	return TWST_OK;
+}
+
+void twi_close()
+{
+	MASTER_STOP();
+	_state &= ~CLOSED;
 }
