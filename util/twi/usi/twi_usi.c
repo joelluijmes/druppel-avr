@@ -95,6 +95,7 @@
 
 static uint8_t _address;
 static void start_condition();
+static void usi_init_master();
 
 TWRESULT usi_wait()
 {
@@ -137,7 +138,7 @@ TWRESULT usi_init_slave(uint8_t slave_addr)
     return usi_wait();
 }
 
-void usi_init_master()
+static void usi_init_master()
 {
     SCL_HIGH();
     SDA_HIGH();
@@ -152,10 +153,11 @@ void usi_init_master()
 
 TWRESULT usi_start_master(uint8_t slave_addr, uint8_t transmitting)
 {
+    usi_init_master(); 
     start_condition();
         
     if ((USISR & (1 << USISIF)) == 0)                   // Checks start condition :)
-    return 0;
+        return TWST_START_FAILED;
 
     // Data is the slave address and the bit if we are sending or receiving
     uint8_t data = (slave_addr << 1) | (transmitting ? 0x00 : 0x01);
