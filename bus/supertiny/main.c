@@ -11,8 +11,34 @@
 
 FILE mystdout = FDEV_SETUP_STREAM(uart_putchar, NULL, _FDEV_SETUP_WRITE);
 
+static uint16_t read_addr()
+{
+	uint8_t buf[2];
+	eeprom_read(buf, 2);
+
+	return buf[0] << 8 | buf[1];
+}
+
 int main()
 {
+	uint8_t data[64];
+	
+	addr = read_addr();
+
+	while (1)
+	{
+		uint8_t len = sensor_fill(data, 64);
+
+		eeprom_write(addr, data, len);
+		addr += len;
+
+		if (communcation_active())
+			communication_send(data, 64);
+	}
+
+
+
+
 	uart_init();
 	stdout = &mystdout;
 	sei();

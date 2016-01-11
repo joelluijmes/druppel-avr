@@ -1,6 +1,9 @@
 #pragma once
 #include <inttypes.h>
 
+#define CLOSE 0
+#define KEEP_ALIVE 1
+
 // Status codes of what this module will return
 typedef uint8_t TWRESULT;
 #define TWST_OK	1
@@ -13,5 +16,20 @@ typedef uint8_t TWRESULT;
 
 #define TWST_STOP_FAILED 6
 
-TWRESULT twi_master_read(uint8_t slaveaddr, uint8_t* buffer, uint8_t len); 
-TWRESULT twi_master_send(uint8_t slaveaddr, uint8_t* buffer, uint8_t len);
+TWRESULT twi_master_send(uint8_t slaveaddr, uint8_t* buffer, uint8_t len, uint8_t keepAlive); 
+TWRESULT twi_master_receive(uint8_t slaveaddr, uint8_t* buffer, uint8_t len, uint8_t keepAlive);
+void twi_close();
+
+static inline TWRESULT twi_master_send_byte(uint8_t slaveaddr, uint8_t data, uint8_t keepAlive)
+{
+	uint8_t buf[] = { data };
+	return twi_master_send(slaveaddr, buf, 1, keepAlive);
+}
+
+static inline uint8_t twi_master_receive_byte(uint8_t slaveaddr, uint8_t keepAlive)
+{
+	uint8_t buf[1];
+	twi_master_receive(slaveaddr, buf, 1, keepAlive);
+
+	return buf[0];
+}
