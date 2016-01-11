@@ -1,6 +1,6 @@
 #include "eeprom.h"
 
-static uint8_t eeprom_get_ctrl_id();
+#define ADDR_EEPROM (EEPROM_24LC256_CTRL_ID << 3 | EEPROM_24LC256_A2 << 2 | EEPROM_24LC256_A1 << 1 | EEPROM_24LC256_A0)
 static uint16_t eeprom_data_address;
 
 uint16_t eeprom_get_address() 
@@ -27,13 +27,13 @@ void eeprom_set_address(uint16_t address)
 
 uint8_t eeprom_read_address(uint16_t address)
 {
-	if (twi_mt_start(eeprom_get_ctrl_id()) != TWST_OK)
+	if (twi_mt_start(ADDR_EEPROM) != TWST_OK)
 		return 0;
 
 	twi_write(address >> 8);
 	twi_write((uint8_t) address);
 
-	if (twi_mr_start(eeprom_get_ctrl_id()) != TWST_OK)
+	if (twi_mr_start(ADDR_EEPROM) != TWST_OK)
 		return 0;
 
 	uint8_t receive = twi_peek(); 
@@ -43,13 +43,13 @@ uint8_t eeprom_read_address(uint16_t address)
 
 void eeprom_read_page_address(uint16_t address, uint8_t* buf, uint8_t buflen)
 {
-	if (twi_mt_start(eeprom_get_ctrl_id()) != TWST_OK)
+	if (twi_mt_start(ADDR_EEPROM) != TWST_OK)
 		return;
 
 	twi_write(address >> 8);
 	twi_write((uint8_t) address);
 
-	if (twi_mr_start(eeprom_get_ctrl_id()) != TWST_OK)
+	if (twi_mr_start(ADDR_EEPROM) != TWST_OK)
 		return;
 
 	for(uint8_t i = 0; i < (buflen - 1); i++)
@@ -61,7 +61,7 @@ void eeprom_read_page_address(uint16_t address, uint8_t* buf, uint8_t buflen)
 
 void eeprom_write_address(uint16_t address, uint8_t byte)
 {
-	if (twi_mt_start(eeprom_get_ctrl_id()) != TWST_OK)
+	if (twi_mt_start(ADDR_EEPROM) != TWST_OK)
 		return;
 
 	twi_write((uint8_t) address >> 8);
@@ -73,7 +73,7 @@ void eeprom_write_address(uint16_t address, uint8_t byte)
 
 void eeprom_write_page_address(uint16_t address, uint8_t* buf, uint8_t buflen)
 {
-	if (twi_mt_start(eeprom_get_ctrl_id()) != TWST_OK)
+	if (twi_mt_start(ADDR_EEPROM) != TWST_OK)
 		return;
 
 	twi_write(address >> 8);
@@ -84,9 +84,4 @@ void eeprom_write_page_address(uint16_t address, uint8_t* buf, uint8_t buflen)
 
 	twi_stop();
 	_delay_ms(10);
-}
-
-static uint8_t eeprom_get_ctrl_id()
-{
-	return EEPROM_24LC256_CTRL_ID << 3 | EEPROM_24LC256_A2 << 2 | EEPROM_24LC256_A1 << 1 | EEPROM_24LC256_A0;
 }

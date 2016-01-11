@@ -2,11 +2,11 @@ CC = avr-gcc
 OBJCOPY = avr-objcopy
 DUDE = avrdude
 
-CCFLAGS = -Wall -Os -mmcu=atmega328p -DF_CPU=16000000UL -DBAUD=57600 -std=c99
+CCFLAGS = -Wall -O2 -mmcu=attiny85 -DF_CPU=16000000UL -DBAUD=57600 -std=c99
 OBJCOPYFLAGS = -O ihex
-DUDEFLAGS = -p atmega328p -b 57600 -c arduino -D -P /./COM7 
+DUDEFLAGS = -p attiny85 -b 57600 -c arduino -D -P /./COM7 
 
-SOURCES = main.c ../twi/twi_module.c ../uart/uart.c eeprom.c
+SOURCES = main.c ../twi/twi.c ../twi/usi/twi_usi.c eeprom.c
 
 COMPILED = firmware.hex
 LINKED = firmware.o
