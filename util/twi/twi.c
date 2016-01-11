@@ -33,7 +33,7 @@ TWRESULT twi_master_send(uint8_t slaveaddr, uint8_t* buffer, uint8_t len, uint8_
 {
 	if (_state & CLOSED)
 	{
-		if(MT_START(slaveaddr) == TWST_OK)
+		if(MT_START(slaveaddr) != TWST_OK)
 		{
 			twi_close();
 			return TWST_START_FAILED; 
@@ -53,7 +53,7 @@ TWRESULT twi_master_receive(uint8_t slaveaddr, uint8_t* buffer, uint8_t len, uin
 {
 	if (_state & CLOSED)
 	{
-		if(MR_START(slaveaddr) == TWST_OK)
+		if(MR_START(slaveaddr) != TWST_OK)
 		{
 			twi_close();
 			return TWST_START_FAILED;
