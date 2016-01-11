@@ -33,6 +33,7 @@ uint8_t eeprom_read(uint16_t address, uint8_t* buf, uint8_t buflen)
 		return 0;
 	}
 
+	twi_close();																// reopen as master receive
 	TWRESULT result = twi_master_receive(I2C_ADDR_DEVICE, buf, buflen, CLOSE);
 	return result == TWST_OK;
 }
