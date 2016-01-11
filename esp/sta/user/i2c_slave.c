@@ -44,12 +44,14 @@ i2c_slave_init(void)
     PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_GPIO2);            // SET GPIO function, not uart...
 
     // Setting I2C pins to input
-    gpio_output_set(0, 0, 0, GPIO_ID_PIN(0));
-    gpio_output_set(0, 0, 0, GPIO_ID_PIN(2));
+    gpio_output_set(0, 0, 0, GPIO_ID_PIN(SDA_PIN));
+    gpio_output_set(0, 0, 0, GPIO_ID_PIN(SCL_PIN));
 
-    //user_i2c_debug(); 
+    user_i2c_debug(); 
 
     i2c_update_status(I2C_READING_START);   
+    
+    ETS_GPIO_INTR_ENABLE(); // Enable gpio interrupts
 }
 
 /**
@@ -124,7 +126,7 @@ i2c_slave_reading_address() {
 
         if(i2c_status == I2C_READING_ADDRESS) {
             if((i2c_buffer >> 1) != I2C_SLAVE_ADDRESS) {
-                os_printf("I2C: Reading restart, received address: %d, 0x%x \n", i2c_buffer, i2c_buffer);
+                //os_printf("I2C: Reading restart, received address: %d, 0x%x \n", i2c_buffer, i2c_buffer);
                 i2c_update_status(I2C_READING_START);
                 return i2c_return_interrupt(); 
             }
@@ -192,7 +194,7 @@ i2c_slave_writing_address()
         if(GPIO_INPUT_GET(SDA_PIN) > 0) {
             i2c_update_status(I2C_READING_START);           // Received NACK
             i2c_return_interrupt(); 
-            //os_printf("Writing status done, received nack from master\n");
+            os_printf("Writing status done, received nack from master\n");
             return; 
 
         } else {
