@@ -17,5 +17,5 @@ typedef uint8_t TWRESULT;
 #define TWST_STOP_FAILED 6
 
 TWRESULT twi_master_send(uint8_t slaveaddr, uint8_t* buffer, uint8_t len, uint8_t keepAlive); 
-TWRESULT twi_master_read(uint8_t slaveaddr, uint8_t* buffer, uint8_t len, uint8_t keepAlive);
+TWRESULT twi_master_receive(uint8_t slaveaddr, uint8_t* buffer, uint8_t len, uint8_t keepAlive);
 void twi_close();
