@@ -4,7 +4,7 @@
 #include <util/delay.h>
 #include <avr/interrupt.h>
 
-#include "../twi.h"
+#include "twi.h"
 
 #if defined (__AVR_ATtiny85__)
 #define DDR_USI             DDRB
@@ -19,7 +19,8 @@
 #endif
 
 TWRESULT usi_init_slave(uint8_t slave_addr);
-TWRESULT usi_init_master(uint8_t slave_addr, uint8_t transmitting);
+void usi_init_master();
+TWRESULT usi_start_master(uint8_t slave_addr, uint8_t transmitting);
 uint8_t usi_write_master(uint8_t data);
 uint8_t usi_read_master(uint8_t nack);
 uint8_t usi_write_slave(uint8_t data);
