@@ -15,28 +15,20 @@
 
 #include "i2c_slave.h"
 #include "user_global_definitions.h"
+#include "user_tcpclient.h"
 
 static volatile os_timer_t timer1;
 
-extern volatile uint8_t wifi_status; 
-
-volatile uint8_t    i2c_byte_buffer[65]; 
+uint8_t    i2c_byte_buffer[65]; 
 volatile uint8_t    i2c_buffer; 
 volatile int8_t     i2c_bit_number;  
-volatile int8_t    i2c_byte_number; 
+int8_t    i2c_byte_number; 
 volatile int8_t     clockpulses;        // Debug
-
-#define I2C_SLAVE_ADDRESS 0x10
-#define I2C_READING_START 0x01
-#define I2C_READING_ADDRESS 0x02
-#define I2C_READING_BYTES 0x03
-#define I2C_WRITING_BYTES 0x04
 
 //#define I2C_READ_PIN(pin) (!!(PIN_IN & ( 1  << pin )))    // outputs 0 or 1
 #define I2C_READ_PIN(pin) (PIN_IN & ( 1  << pin ))
 #define I2C_SDA_SET(value) ((value > 0) ? (PIN_OUT_SET = 1 << SDA_PIN) : (PIN_OUT_CLEAR = 1 << SDA_PIN))
 
-static void i2c_update_status(uint8_t status);
 static void i2c_slave_reading_start();
 static void i2c_slave_reading_address();
 static void i2c_slave_writing_address();
@@ -47,6 +39,7 @@ static uint8_t i2c_status;
 void ICACHE_FLASH_ATTR 
 i2c_slave_init(void)
 {
+    os_printf("I2C: init\n");
     PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0);            // SET GPIO function, not uart...
     PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_GPIO2);            // SET GPIO function, not uart...
 
@@ -54,7 +47,7 @@ i2c_slave_init(void)
     gpio_output_set(0, 0, 0, GPIO_ID_PIN(0));
     gpio_output_set(0, 0, 0, GPIO_ID_PIN(2));
 
-    user_i2c_debug(); 
+    //user_i2c_debug(); 
 
     i2c_update_status(I2C_READING_START);   
 }
@@ -66,7 +59,7 @@ i2c_slave_init(void)
 *  2: negative edge
 *  3: any egde
 */
-static void ICACHE_FLASH_ATTR
+void ICACHE_FLASH_ATTR
 i2c_update_status(uint8_t status)
 {
     // We're assuming that interrupts are disabled
@@ -84,10 +77,11 @@ i2c_update_status(uint8_t status)
 
     switch(status) 
     {
+        case I2C_IDLE: 
+            break; 
         case I2C_READING_START:
             ETS_GPIO_INTR_ATTACH(i2c_slave_reading_start, SDA_PIN);      // GPIO2 interrupt handler
             gpio_pin_intr_state_set(SDA_PIN, 2);                            // Interrupt on negative edge
-
 
             i2c_buffer = 0; 
             i2c_bit_number = 7; 
@@ -114,6 +108,7 @@ i2c_update_status(uint8_t status)
 static void
 i2c_slave_reading_address() {
     ETS_GPIO_INTR_DISABLE(); // Disable gpio interrupts
+
     clockpulses++; 
 
     //while(!I2C_READ_PIN(SCL_PIN));               // Wait till SCL is low
@@ -132,7 +127,7 @@ i2c_slave_reading_address() {
                 os_printf("I2C: Reading restart, received address: %d, 0x%x \n", i2c_buffer, i2c_buffer);
                 i2c_update_status(I2C_READING_START);
                 return i2c_return_interrupt(); 
-            } 
+            }
             if((i2c_buffer & 1) == 0) {
                 i2c_update_status(I2C_READING_BYTES);
             } else {
@@ -156,7 +151,17 @@ i2c_slave_reading_address() {
         {
             // Sending bytes ?
             os_printf("Received %d bytes\n", i2c_byte_number);
-            i2c_update_status(I2C_READING_START);
+
+            // os_memcpy(tcp_buffer, i2c_byte_buffer, i2c_byte_number);
+            // tcp_bytes = i2c_byte_number; 
+            // char buff[2]; 
+
+            // char **elem_p = buff; // test
+            // user_tcpclient_init(elem_p, 2); 
+            //user_tcpclient_init(&i2c_byte_buffer, i2c_byte_number); 
+
+            i2c_update_status(I2C_IDLE);
+            user_tcpclient_init(&i2c_byte_buffer[1], i2c_byte_number);
             return i2c_return_interrupt(); 
         }
 
@@ -187,6 +192,7 @@ i2c_slave_writing_address()
         if(GPIO_INPUT_GET(SDA_PIN) > 0) {
             i2c_update_status(I2C_READING_START);           // Received NACK
             i2c_return_interrupt(); 
+            //os_printf("Writing status done, received nack from master\n");
             return; 
 
         } else {
@@ -214,9 +220,9 @@ void ICACHE_FLASH_ATTR
 print_debug_info(void *arg) // in Arduino this is loop the main loop
 {
     if(clockpulses != 0) {
-        // os_printf("DEBUG, count: %d, clockpulses: %d\n", i2c_bit_number, clockpulses);
+        os_printf("DEBUG, count: %d, clockpulses: %d\n", i2c_bit_number, clockpulses);
 
-        // os_printf("BUFFER: %d, %d, %d \n", i2c_byte_buffer[0], i2c_byte_buffer[1], i2c_byte_buffer[2]);
+        os_printf("BUFFER: %d, %d, %d \n", i2c_byte_buffer[0], i2c_byte_buffer[1], i2c_byte_buffer[2]);
     }
 
     clockpulses = 0; 
@@ -232,7 +238,7 @@ print_debug_info(void *arg) // in Arduino this is loop the main loop
 
     os_memset(&i2c_byte_buffer[0], 0, sizeof(i2c_byte_buffer));
 
-    //i2c_slave_intr_init(); 
+    //i2c_slave_intr_init();
 
     // stime = system_get_time(); 
     // reading_address = system_get_time() - stime; 

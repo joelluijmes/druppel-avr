@@ -12,8 +12,8 @@
 void tcpclient_recv_cb(void *arg, char *data, unsigned short length);
 void tcpclient_sent_cb(void *arg);
 void tcpclient_discon_cb(void *arg);
-void tcpclient_sent_data(struct espconn *pespconn, uint8 *data);
+void tcpclient_sent_data(struct espconn *pespconn, uint8 *data, uint8_t length);
 void tcpclient_connect_cb(void *arg);
-void user_tcpclient_init(void);
+void user_tcpclient_init(uint8_t *buf, uint8_t buflen);
 
 #endif
