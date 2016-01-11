@@ -27,10 +27,10 @@ int main()
 	{
 		uint8_t len = sensor_fill(data, 64);
 
-		eeprom_write(addr, data, len);
 		addr += len;
+		eeprom_write(addr, data, len);
 
 		if (communcation_active())
-			communication_send(data, 64);
+			communication_send(data, len);
 	}
 }

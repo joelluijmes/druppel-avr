@@ -12,7 +12,8 @@ enum state
 	STATE_NOT_ATTEMPTED = 0,
     STATE_NOT_CONNECTED = 1,
     STATE_CONNECTED = 2,
-    STATE_READING_DONE = 3,
+    STATE_BUFFER_FULL = 3,
+    STATE_COMPLETED = 4
 };
 
 typedef enum command command;
@@ -31,33 +32,46 @@ static uint8_t write_sensor_eeprom(uint32_t unixtime, uint8_t sensor_id, uint8_t
 static state _states[SENSORS_ADDRESS_LEN] = {};
 uint8_t sensor_fill(uint8_t* data, uint8_t len)
 {
-	uint8_t filled = 0;
+	uint8_t offset = 0;
 	uint32_t rawtime = read_unix_time();
 
-	while (filled < len)
+	uint8_t completed = 0;												// 'dirty' flag, will be cleared by every sensor if their state has changed
+	while (!completed)													// if not it indicates we checked all sensors
 	{
+		completed = 1;
 		for (uint8_t address = SENSORS_ADDRESS_START; address < SENSORS_ADDRESS_END; ++address)
 		{
-			state* p_state = &_states[address - SENSORS_ADDRESS_END];
+			state* p_state = &_states[address - SENSORS_ADDRESS_END];	// The array starts at 0, the first address isn't gaurunteed to be at 0 tho
+																		// so for the correct array index we need to subtract the last address
+																		// (The addresses are sequential ;) )
 			switch (*p_state)
 			{
-			case STATE_FAILED:
-			case STATE_NOT_ATTEMPTED:
+			case STATE_COMPLETED:										// Already completed this sensor
+				continue;
+			case STATE_FAILED:											// It failed at some point so we start over
+			case STATE_NOT_ATTEMPTED:									// It's not yet attempted 
 				*p_state = request_measurement(address); 
 				break;
-			case STATE_MEASURING:
-				*p_state = sensor_ready(); 
+			case STATE_MEASURING:										// we sent the request to start measuring
+				*p_state = sensor_ready(address); 
 				break;
-			case STATE_AVAILABLE:
+			case STATE_AVAILABLE:										// Measurement completed -> start reading :D
+			{
+				int8_t len = read_sensor(address, data, len - offset);	// Directly store it in the buffer
+				if (check_response(len))								// validated the response
+				{
+					offset += len;
+					break;
+				}
+
+				completed = 1;											// Buffer is full -> exit
 				break;
-			case STATE_CONNECTED:
-				*p_state = request_measurement(address); 
-				break;
-			case STATE_READING_DONE:
-				continue; 
+			}
 			default:
 				break;
 			}
+
+			completed = 0;												// Something has changed
 		}
 	}
 }
@@ -72,11 +86,13 @@ static state request_measurement(uint8_t slave_address)
 static state sensor_ready(uint8_t slave_address)
 {
 	uint8_t data;
+
+	// TODO: Add timeout
 	return (twi_master_receive_byte(slave_address, &data, CLOSE) != TWST_OK)
-		? STATE_FAILED
+		? STATE_MEASURING
 		: (data == COMMAND_OK)
 			? STATE_AVAILABLE
-			: STATE_MEASURING;
+			: STATE_FAILED;
 }
 
 static state sensor_start_measure(uint8_t slave_address)
