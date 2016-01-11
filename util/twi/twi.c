@@ -38,6 +38,8 @@ TWRESULT twi_master_send(uint8_t slaveaddr, uint8_t* buffer, uint8_t len, uint8_
 			twi_close();
 			return TWST_START_FAILED; 
 		}
+		
+		_state &= ~CLOSED;
 	}
 
 	for (uint8_t i = 0; i < len; ++i)
@@ -58,6 +60,8 @@ TWRESULT twi_master_receive(uint8_t slaveaddr, uint8_t* buffer, uint8_t len, uin
 			twi_close();
 			return TWST_START_FAILED;
 		}
+
+		_state &= ~CLOSED;
 	}
 
 	for (uint8_t i = 0; i < len - 1; ++i)
@@ -74,5 +78,5 @@ TWRESULT twi_master_receive(uint8_t slaveaddr, uint8_t* buffer, uint8_t len, uin
 void twi_close()
 {
 	MASTER_STOP();
-	_state &= ~CLOSED;
+	_state |= CLOSED;
 }
