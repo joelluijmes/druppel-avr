@@ -32,10 +32,10 @@ uint32_t read_unix_time()
 static void read_ds1307(DS1307 *time) 
 {
 	uint8_t buffer[7] = {}; 
-	if(twi_master_send(I2C_ADDR_DS1307, buffer, 1) != TWST_OK)
+	if(twi_master_send_byte(I2C_ADDR_DS1307, 0x00, CLOSE) != TWST_OK)
 		return; 
 
-	if(twi_master_read(I2C_ADDR_DS1307, buffer, sizeof(buffer)) != TWST_OK)
+	if(twi_master_receive(I2C_ADDR_DS1307, buffer, sizeof(buffer), CLOSE) != TWST_OK)
 		return; 
 
 	//Reading values
