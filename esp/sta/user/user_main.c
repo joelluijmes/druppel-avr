@@ -59,10 +59,16 @@ init_done_cb() {
 
     // Wifi connect to ap
     os_delay_us(2000*1000);
-    //wifi_station_disconnect();
+
+    wifi_set_sleep_type(NONE_SLEEP_T);
+
+    wifi_station_disconnect();
     wifi_station_dhcpc_stop(); 
     user_sta_setup_static_ip();
     wifi_station_connect();
+
+
+    //i2c_slave_init();
 
     //os_printf("autoconnect: %d ", wifi_station_get_auto_connect());
 }
@@ -79,12 +85,11 @@ LOCAL void event_cb(System_Event_t *event) {
     case EVENT_STAMODE_AUTHMODE_CHANGE:
         os_printf("Event: EVENT_STAMODE_AUTHMODE_CHANGE\n");
     case EVENT_STAMODE_GOT_IP:
+        os_printf("Event: EVENT_STAMODE_GOT_IP\n");
+
         wifi_status = WIFI_READY;               // For i2c slave to respond
 
         i2c_slave_init();
-
-        os_printf("Event: EVENT_STAMODE_GOT_IP\n");
-//        user_tcpclient_init(); 
         break;
     default:
         os_printf("Unexpected event: %d\n", event->event);
@@ -115,10 +120,6 @@ void user_init(void)
 
     PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0);            // SET GPIO function, not uart...
     PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_GPIO2);            // SET GPIO function, not uart...
-
-    // Setting I2C pins to input
-    gpio_output_set(0, 0, 0, GPIO_ID_PIN(0));
-    gpio_output_set(0, 0, 0, GPIO_ID_PIN(2));
 
 
     system_init_done_cb(init_done_cb);
