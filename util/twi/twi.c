@@ -26,7 +26,7 @@
 	#error "Device not supported"
 #endif
 
-static uint8_t _state = 0;
+static uint8_t _state = CLOSED;
 #define CLOSED (1 << 0)
 
 TWRESULT twi_master_send(uint8_t slaveaddr, uint8_t* buffer, uint8_t len, uint8_t keepAlive)
@@ -38,7 +38,7 @@ TWRESULT twi_master_send(uint8_t slaveaddr, uint8_t* buffer, uint8_t len, uint8_
 			twi_close();
 			return TWST_START_FAILED; 
 		}
-		
+
 		_state &= ~CLOSED;
 	}
 
