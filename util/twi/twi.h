@@ -10,6 +10,7 @@ typedef uint8_t TWRESULT;
 #define TWST_START_FAILED 2
 
 #define TWST_MASTER_NACK 3
+#define TWST_MASTER_RECEIVE_FAILED 7
 
 #define TWST_SL_TRANSMITTING 4
 #define TWST_SL_RECEIVING 5
@@ -26,10 +27,12 @@ static inline TWRESULT twi_master_send_byte(uint8_t slaveaddr, uint8_t data, uin
 	return twi_master_send(slaveaddr, buf, 1, keepAlive);
 }
 
-static inline uint8_t twi_master_receive_byte(uint8_t slaveaddr, uint8_t keepAlive)
+static inline TWRESULT twi_master_receive_byte(uint8_t slaveaddr, uint8_t* data, uint8_t keepAlive)
 {
 	uint8_t buf[1];
-	twi_master_receive(slaveaddr, buf, 1, keepAlive);
+	if (twi_master_receive(slaveaddr, buf, 1, keepAlive) != TWST_OK)
+		return TWST_MASTER_RECEIVE_FAILED;
 
-	return buf[0];
+	*data = buf[0];
+	return TWST_OK;
 }

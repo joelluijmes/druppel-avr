@@ -2,24 +2,18 @@
 
 #include <avr/io.h>
 #include <util/delay.h>
-#include "../../util/twi/twi_module.h"
+#include "../../util/twi/twi.h"
 #include "../../util/ds1307/ds1307.h"
 #include "../../util/eeprom/eeprom.h"
-
-#define true 1
-#define false 0
-#define SENSORS_ADDRESS_FROM 0x00
-#define SENSORS_ADDRESS_TO 0x10
-#define SENSORS_ADDRESS_SIZE 0x10
 
 #define SENSORS_RECEIVE_BUFFER_SIZE 0x10
 
 enum state
 {
-	NOT_ATTEMPTED = 0,
-    NOT_CONNECTED = 1,
-    CONNECTED = 2,
-    READING_DONE = 3,
+	STATE_NOT_ATTEMPTED = 0,
+    STATE_NOT_CONNECTED = 1,
+    STATE_CONNECTED = 2,
+    STATE_READING_DONE = 3,
 };
 
 typedef enum state state;
