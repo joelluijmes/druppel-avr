@@ -33,7 +33,7 @@ static inline TWRESULT twi_master_send_byte(uint8_t slaveaddr, uint8_t data, uin
 	return twi_master_send(slaveaddr, buf, 1, keepAlive);
 }
 
-static inline TWRESULT twi_slave_send_byte(uint8_t slaveaddr, uint8_t data, uint8_t keepAlive)
+static inline TWRESULT twi_slave_send_byte(uint8_t slaveaddr, uint8_t data)
 {
 	uint8_t buf[] = { data };
 	uint8_t len = 1;
@@ -50,7 +50,7 @@ static inline TWRESULT twi_master_receive_byte(uint8_t slaveaddr, uint8_t* data,
 	return TWST_OK;
 }
 
-static inline TWRESULT twi_slave_receive_byte(uint8_t slaveaddr, uint8_t* data, uint8_t keepAlive)
+static inline TWRESULT twi_slave_receive_byte(uint8_t slaveaddr, uint8_t* data)
 {
 	uint8_t buf[1];
 	uint8_t len = 1;

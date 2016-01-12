@@ -60,7 +60,7 @@ TWRESULT twi_master_send(uint8_t slaveaddr, uint8_t* buffer, uint8_t len, uint8_
 TWRESULT twi_slave_send(uint8_t slaveaddr, uint8_t* buffer, uint8_t* len)
 {
 	TWRESULT result = SLAVE_INIT(slaveaddr);
-	if (result != TWST_OK)
+	if (result != TWST_SL_TRANSMITTING)
 		return result;
 
 	uint8_t i;
@@ -71,9 +71,9 @@ TWRESULT twi_slave_send(uint8_t slaveaddr, uint8_t* buffer, uint8_t* len)
 			break;
 	}
 
-	if (*len != i)												// were cut off by master (NACK)
+	if (*len < i - 1)											// were cut off by master (NACK)
 	{
-		*len = i;												// set bytes we actually were able to send
+		*len = i - 1;											// set bytes we actually were able to send
 		return TWST_PARTIAL_TRANSMIT;
 	}
 
@@ -107,7 +107,7 @@ TWRESULT twi_master_receive(uint8_t slaveaddr, uint8_t* buffer, uint8_t len, uin
 TWRESULT twi_slave_receive(uint8_t slaveaddr, uint8_t* buffer, uint8_t* len)
 {
 	TWRESULT result = SLAVE_INIT(slaveaddr);
-	if (result != TWST_OK)
+	if (result != TWST_SL_RECEIVING)
 		return result;
 
 	uint8_t i;
