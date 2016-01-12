@@ -16,10 +16,15 @@ typedef uint8_t TWRESULT;
 #define TWST_SL_RECEIVING 5
 
 #define TWST_STOP_FAILED 6
+#define TWST_PARTIAL_TRANSMIT 7
+#define TWST_PARTIAL_READ 8
 
 TWRESULT twi_master_send(uint8_t slaveaddr, uint8_t* buffer, uint8_t len, uint8_t keepAlive); 
+TWRESULT twi_slave_send(uint8_t slaveaddr, uint8_t* buffer, uint8_t* len);
 TWRESULT twi_master_receive(uint8_t slaveaddr, uint8_t* buffer, uint8_t len, uint8_t keepAlive);
+TWRESULT twi_slave_receive(uint8_t slaveaddr, uint8_t* buffer, uint8_t* len);
 void twi_close();
+uint8_t twi_slave_available();
 
 static inline TWRESULT twi_master_send_byte(uint8_t slaveaddr, uint8_t data, uint8_t keepAlive)
 {
@@ -35,4 +40,20 @@ static inline TWRESULT twi_master_receive_byte(uint8_t slaveaddr, uint8_t* data,
 
 	*data = buf[0];
 	return TWST_OK;
+}
+
+static inline TWRESULT twi_slave_send_byte(uint8_t slaveaddr, uint8_t data, uint8_t keepAlive)
+{
+	uint8_t buf[] = { data };
+	uint8_t len = 1;
+	return twi_slave_send(slaveaddr, buf, &len);
+}
+
+static inline uint8_t twi_slave_receive_byte(uint8_t slaveaddr, uint8_t keepAlive)
+{
+	uint8_t buf[1];
+	uint8_t len = 1;
+	twi_slave_receive(slaveaddr, buf, &len);
+
+	return buf[0];
 }

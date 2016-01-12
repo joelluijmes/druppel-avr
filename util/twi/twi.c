@@ -22,6 +22,12 @@
 	#define MASTER_WRITE(data) (usi_write_master(data))
 	#define MASTER_READ(nack) (usi_read_master(nack))
 	#define MASTER_STOP() (usi_stop())
+
+	#define SLAVE_INIT(slaveaddr) (usi_init_slave(slaveaddr))
+	#define SLAVE_WRITE(data) (usi_write_slave(data))
+	#define SLAVE_READ() (usi_read_slave())
+	#define SLAVE_IS_STOP() (usi_is_stop())
+	#define SLAVE_AVAILABLE() (usi_available())
 #else
 	#error "Device not supported"
 #endif
@@ -51,6 +57,29 @@ TWRESULT twi_master_send(uint8_t slaveaddr, uint8_t* buffer, uint8_t len, uint8_
 	return TWST_OK;
 }
 
+TWRESULT twi_slave_send(uint8_t slaveaddr, uint8_t* buffer, uint8_t* len)
+{
+	TWRESULT result = SLAVE_INIT(slaveaddr);
+	if (result != TWST_OK)
+		return result;
+
+	uint8_t i;
+	for (i = 0; i < *len; ++i)
+	{
+		uint8_t ack = SLAVE_WRITE(buffer[i]);
+		if (!ack)												// NACK received
+			break;
+	}
+
+	if (*len != i)												// were cut off by master (NACK)
+	{
+		*len = i;												// set bytes we actually were able to send
+		return TWST_PARTIAL_TRANSMIT;
+	}
+
+	return TWST_OK;
+}
+
 TWRESULT twi_master_receive(uint8_t slaveaddr, uint8_t* buffer, uint8_t len, uint8_t keepAlive)
 {
 	if (_state & CLOSED)
@@ -75,8 +104,37 @@ TWRESULT twi_master_receive(uint8_t slaveaddr, uint8_t* buffer, uint8_t len, uin
 	return TWST_OK;
 }
 
+TWRESULT twi_slave_receive(uint8_t slaveaddr, uint8_t* buffer, uint8_t* len)
+{
+	TWRESULT result = SLAVE_INIT(slaveaddr);
+	if (result != TWST_OK)
+		return result;
+
+	uint8_t i;
+	for (i = 0; i < *len; ++i)
+	{
+		buffer[i] = SLAVE_READ();
+
+		if (SLAVE_IS_STOP())
+			break;		
+	}
+
+	if (*len != i)												// were cut off by master (NACK)
+	{
+		*len = i;												// set bytes we actually were able to send
+		return TWST_PARTIAL_READ;
+	}
+
+	return TWST_OK;
+}
+
 void twi_close()
 {
 	MASTER_STOP();
 	_state |= CLOSED;
+}
+
+uint8_t twi_slave_available()
+{
+	return SLAVE_AVAILABLE();
 }
