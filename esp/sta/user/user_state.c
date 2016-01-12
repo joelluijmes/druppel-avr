@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * FileName: user_status.c
+ * FileName: user_state.c
  *
  * Description: Keep the wifi status.
  *
@@ -8,9 +8,6 @@
  *     2016/1/12, v1.0 create this file.
 *******************************************************************************/
 
-#include "ets_sys.h"
-#include "osapi.h"
-#include "gpio.h"
 #include "user_interface.h"
 
 #include "user_state.h"

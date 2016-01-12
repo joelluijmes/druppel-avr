@@ -10,14 +10,10 @@
 
 #include "osapi.h"
 #include "user_interface.h"
-#include "user_tcpclient.h"
 #include "espconn.h"
-#include "mem.h"
-
+//#include "mem.h
+#include "user_tcpclient.h"
 #include "user_state.h"
-//#include "user_global_definitions.h"
-#include "i2c_slave.h"
-
 
 static state tcp_state;                                         // TCP connection state
 

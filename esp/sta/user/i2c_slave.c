@@ -14,10 +14,8 @@
 #include "user_interface.h"
 
 #include "i2c_slave.h"
-
 #include "user_global_definitions.h"
 #include "user_state.h"
-
 #include "user_tcpclient.h"
 
 static volatile os_timer_t timer1;
@@ -28,7 +26,7 @@ volatile int8_t     i2c_bit_number;
 int8_t    i2c_byte_number; 
 volatile int8_t     clockpulses;        // Debug
 
-//#define I2C_READ_PIN(pin) (!!(PIN_IN & ( 1  << pin )))    // outputs 0 or 1
+#define READ_PIN(pin) (!!(PIN_IN & ( 1  << pin )))    // outputs 0 or 1
 #define I2C_READ_PIN(pin) (PIN_IN & ( 1  << pin ))
 #define I2C_SDA_SET(value) ((value > 0) ? (PIN_OUT_SET = 1 << SDA_PIN) : (PIN_OUT_CLEAR = 1 << SDA_PIN))
 
@@ -120,17 +118,16 @@ i2c_update_status(uint8_t status)
 static void
 i2c_slave_reading_address() {
     ETS_GPIO_INTR_DISABLE(); // Disable gpio interrupts
-
     clockpulses++; 
 
     //while(!I2C_READ_PIN(SCL_PIN));               // Wait till SCL is low
 
     if(i2c_bit_number > 0) {
-        i2c_buffer |= GPIO_INPUT_GET(SDA_PIN) << i2c_bit_number;
+        i2c_buffer |= READ_PIN(SDA_PIN) << i2c_bit_number;
         i2c_bit_number--; 
 
     } else if(i2c_bit_number == 0) {
-        i2c_buffer |= GPIO_INPUT_GET(SDA_PIN) << i2c_bit_number;
+        i2c_buffer |= READ_PIN(SDA_PIN) << i2c_bit_number;
         i2c_bit_number--; 
 
 
@@ -218,7 +215,7 @@ i2c_slave_writing_address()
         
         while(!I2C_READ_PIN(SCL_PIN));                      // Wait until SCL become high
 
-        if(GPIO_INPUT_GET(SDA_PIN) > 0) {
+        if(I2C_READ_PIN(SDA_PIN) > 0) {
             if(tcpclient_get_state() == STATE_IDLE || tcpclient_get_state() == STATE_DISCONNECTED)
                 tcpclient_update_state(STATE_CONNECT);
             else if(tcpclient_get_state() != STATE_CONNECTED)

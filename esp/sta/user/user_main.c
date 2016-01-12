@@ -29,8 +29,6 @@ os_install_putc1((void *)uart1_write_char);
 
 #include "ets_sys.h"
 #include "osapi.h"
-#include "gpio.h"
-//#include "user_uart.h"
 #include "user_sta.h"
 #include "user_tcpclient.h"
 #include "user_interface.h"
@@ -39,19 +37,11 @@ os_install_putc1((void *)uart1_write_char);
 #include "user_config.h"
 
 #include "user_state.h"
-//#include "driver/uart.h"
-
-static char hwaddr[6];
-#define MACSTR "%02x:%02x:%02x:%02x:%02x:%02x"
-#define MAC2STR(a) (a)[0], (a)[1], (a)[2], (a)[3], (a)[4], (a)[5]
-
 
 static void ICACHE_FLASH_ATTR 
 init_done_cb() {
-
     // Wifi connect to ap
     os_delay_us(2000*1000); 
-
 
     update_state(STATE_CONNECT);                               // Connecting to ap and set sleep mode to no sleep
 }
@@ -95,8 +85,6 @@ user_init(void)
     os_printf("\r\nUser init...\n"); 
 
     user_sta_init();                                                // ESP8266 station mode init.
-
-    //user_uart_init(); 
 
     PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0);            // SET GPIO function, not uart...
     PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_GPIO2);            // SET GPIO function, not uart...
