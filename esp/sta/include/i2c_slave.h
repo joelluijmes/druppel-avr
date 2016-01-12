@@ -2,6 +2,7 @@
 #define __I2C_SLAVE_H__
 
 void i2c_slave_init(void);
+void i2c_slave_stop(void);
 void i2c_update_status(uint8_t status);
 
 void print_debug_info(void *arg);

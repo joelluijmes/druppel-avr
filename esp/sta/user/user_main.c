@@ -34,20 +34,12 @@ os_install_putc1((void *)uart1_write_char);
 #include "user_sta.h"
 #include "user_tcpclient.h"
 #include "user_interface.h"
-//#include "user_global_definitions.h"
+#include "user_global_definitions.h"
 
 #include "user_config.h"
 
-#include "i2c_slave.h"
-
-//#include "espconn.h"
-//#include "mem.h"
+#include "user_state.h"
 //#include "driver/uart.h"
-
-#define WIFI_BUSY 0x01
-#define WIFI_READY 0x02
-uint8_t wifi_status;
-
 
 static char hwaddr[6];
 #define MACSTR "%02x:%02x:%02x:%02x:%02x:%02x"
@@ -58,19 +50,9 @@ static void ICACHE_FLASH_ATTR
 init_done_cb() {
 
     // Wifi connect to ap
-    os_delay_us(2000*1000);
+    os_delay_us(2000*1000); 
 
-    wifi_set_sleep_type(NONE_SLEEP_T);
-
-    wifi_station_disconnect();
-    wifi_station_dhcpc_stop(); 
-    user_sta_setup_static_ip();
-    wifi_station_connect();
-
-
-    //i2c_slave_init();
-
-    //os_printf("autoconnect: %d ", wifi_station_get_auto_connect());
+   update_state(STATE_CONNECT);                               // Connecting to ap and set sleep mode to no sleep
 }
 
 LOCAL void event_cb(System_Event_t *event) {
@@ -80,41 +62,38 @@ LOCAL void event_cb(System_Event_t *event) {
         break;
     case EVENT_STAMODE_DISCONNECTED:
         os_printf("Event: EVENT_STAMODE_DISCONNECTED\n");
-        os_printf("Reason: %d\n", IP2STR(&event->event_info.disconnected.reason));
+        os_printf("Reason: %d\n", &event->event_info.disconnected.reason);
         break;
     case EVENT_STAMODE_AUTHMODE_CHANGE:
         os_printf("Event: EVENT_STAMODE_AUTHMODE_CHANGE\n");
     case EVENT_STAMODE_GOT_IP:
         os_printf("Event: EVENT_STAMODE_GOT_IP\n");
-
-        wifi_status = WIFI_READY;               // For i2c slave to respond
-
-        i2c_slave_init();
         break;
     default:
         os_printf("Unexpected event: %d\n", event->event);
         break;
     }
+
+    if(event->event == EVENT_STAMODE_GOT_IP)
+        update_state(STATE_CONNECTED);                             // Enable i2c interrupts
+    else 
+        update_state(STATE_DISCONNECTED);                         // Disable i2c interrupts
 }
 
-
-void user_rf_pre_init(void) 
+void ICACHE_FLASH_ATTR
+user_rf_pre_init(void) 
 {
-    //Full RF calibration... take 200ms
-    system_phy_set_powerup_option(3);
+    system_phy_set_powerup_option(3);                               //Full RF calibration... take 200ms
 }
 
-void user_init(void)
+void ICACHE_FLASH_ATTR
+user_init(void)
 {
     //uart_init(BIT_RATE_115200, BIT_RATE_115200);
-    uart_div_modify(0, UART_CLK_FREQ / 115200);     // Enable dev stream to uart 0 
+    uart_div_modify(0, UART_CLK_FREQ / 115200);                     // Enable dev stream to uart 0 
     os_printf("\r\nUser init...\n"); 
 
-    // ESP8266 station mode init.
-    user_sta_init();
-
-    wifi_status = WIFI_BUSY;
-    //wifi_status = WIFI_READY; 
+    user_sta_init();                                                // ESP8266 station mode init.
 
     //user_uart_init(); 
 

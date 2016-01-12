@@ -114,6 +114,8 @@ static void start_measure(uint8_t address)
 		case BMP180_ADDRESS_PRESSURE3:
 			max_conversion_time = 26; 				// Max conversion time of pressure0 is 25.5
 			break;
+		default:
+			break;
 	}
 	_delay_ms(max_conversion_time); 				// Waiting the maximum conversion time														// Max conversion time of pressure3
 }

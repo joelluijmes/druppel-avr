@@ -4,6 +4,8 @@
 #include "../../util/twi/twi.h"
 // #include "../../util/twi/usi/twi_usi.h"
 // #include "../../util/eeprom_usi/eeprom.h"
+#include "../../util/ds1307_usi/ds1307.h"
+#include "../../util/bmp180_usi/bmp180.h"
 
 #define PORT_LED PORTB
 #define DDR_LED DDRB
@@ -33,8 +35,12 @@ int main()
 		buff[i] = 0xAB; //255; 
 	// eeprom_write_page_address(0x00, &buff, 64);
 	// _delay_ms(10);
-	eeprom_read_page_address(0x10, &buff[0], 64);
+	//eeprom_read_page_address(0x10, &buffb[0], 64);
 
+	//uint32_t unixtime = read_unix_time(); 
+
+
+	double test = read_temperature(); 
 
 	// volatile TWRESULT status = usi_start_master(0x08, 1);
 	// if (status != TWST_OK)

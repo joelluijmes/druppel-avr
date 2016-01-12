@@ -2,15 +2,15 @@ CC = avr-gcc
 OBJCOPY = avr-objcopy
 DUDE = avrdude
 
-CCFLAGS = -Wall -O2 -mmcu=attiny85 -DF_CPU=800000UL -DBAUD=57600 -std=c99
+CCFLAGS = -Wall -Os -mmcu=atmega328p -DF_CPU=16000000UL -DBAUD=57600 -std=c99
 OBJCOPYFLAGS = -O ihex
-DUDEFLAGS = -pattiny85 -b 9600 -B12 -c usbasp -PCOM3 -v
+DUDEFLAGS = -p atmega328p -b 57600 -c arduino -D -P /./COM9 
 
-SOURCES = main.c ../../util/twi/twi.c ../../util/twi/usi/twi_usi.c ../../util/eeprom_usi/eeprom.c ../../util/ds1307_usi/ds1307.c ../../util/bmp180_usi/bmp180.c
+SOURCES = main.c ../../util/twi/twi_module.c ../../util/uart/uart.c
+
 COMPILED = firmware.hex
 LINKED = firmware.o
 OBJECTS = $(SOURCES:.c=.o)
-LIBRARIES = ../twi
 
 all: $(COMPILED)
 	avr-size firmware.o

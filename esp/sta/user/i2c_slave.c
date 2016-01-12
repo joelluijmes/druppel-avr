@@ -14,7 +14,10 @@
 #include "user_interface.h"
 
 #include "i2c_slave.h"
+
 #include "user_global_definitions.h"
+#include "user_state.h"
+
 #include "user_tcpclient.h"
 
 static volatile os_timer_t timer1;
@@ -52,6 +55,13 @@ i2c_slave_init(void)
     i2c_update_status(I2C_READING_START);   
     
     ETS_GPIO_INTR_ENABLE(); // Enable gpio interrupts
+}
+
+void ICACHE_FLASH_ATTR 
+i2c_slave_stop(void)
+{ 
+    ETS_GPIO_INTR_DISABLE();                        // Disable Interrupts
+    i2c_update_status(I2C_IDLE);                            // Disable interrupt on specific pin.  
 }
 
 /**
@@ -149,10 +159,26 @@ i2c_slave_reading_address() {
         if(i2c_byte_number >= 0)
             i2c_byte_buffer[i2c_byte_number] = i2c_buffer;      // Save received data
 
+
+        if(i2c_byte_number == 1 && i2c_byte_buffer[0] == 255)               // Received command... 
+        {
+            tcpclient_update_state(i2c_byte_buffer[1]);
+            //tcpclient_update_state(STATE_CONNECT);
+
+
+            os_delay_us(500*1000);
+
+            i2c_update_status(I2C_READING_START);
+            return i2c_return_interrupt(); 
+        }
+
         if(i2c_byte_number > 0 && i2c_byte_number >= i2c_byte_buffer[0]) 
         {
             // Sending bytes ?
-            os_printf("Received %d bytes\n", i2c_byte_number);
+            os_printf("Received %d bytes\n", i2c_byte_number); 
+            // #ifdef DEBUG
+            // IS_DEBUG(os_printf("Received %d bytes\n", i2c_byte_number));
+            // #endif
 
             // os_memcpy(tcp_buffer, i2c_byte_buffer, i2c_byte_number);
             // tcp_bytes = i2c_byte_number; 
@@ -162,8 +188,11 @@ i2c_slave_reading_address() {
             // user_tcpclient_init(elem_p, 2); 
             //user_tcpclient_init(&i2c_byte_buffer, i2c_byte_number); 
 
-            i2c_update_status(I2C_IDLE);
-            user_tcpclient_init(&i2c_byte_buffer[1], i2c_byte_number);
+            //i2c_update_status(I2C_IDLE);
+            // user_tcpclient_init(&i2c_byte_buffer[1], i2c_byte_number);
+            tcpclient_sent_data_test(&i2c_byte_buffer[1], i2c_byte_number); 
+
+            i2c_update_status(I2C_READING_START);
             return i2c_return_interrupt(); 
         }
 
@@ -184,7 +213,7 @@ i2c_slave_writing_address()
     if(i2c_bit_number == 8) while(I2C_READ_PIN(SCL_PIN));   // Wait till SCL is low
 
     if(i2c_bit_number > 0) {
-        I2C_SDA_SET((wifi_status & (1 << (i2c_bit_number - 1)))); 
+        I2C_SDA_SET((tcpclient_get_state() & (1 << (i2c_bit_number - 1)))); 
     } else if(i2c_bit_number == 0) {
         PIN_DIR_INPUT = 1 << SDA_PIN; 
         gpio_output_set(0, 0, 0, GPIO_ID_PIN(SDA_PIN));

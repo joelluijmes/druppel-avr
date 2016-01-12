@@ -60,6 +60,12 @@ user_sta_setup_static_ip(void)
     wifi_set_ip_info(STATION_IF, &info);
 }
 
+void ICACHE_FLASH_ATTR
+user_sta_get_auto_connect(void)
+{
+	os_printf("STA autoconnect: %d \n", wifi_station_get_auto_connect());
+}
+
 void ICACHE_FLASH_ATTR 
 user_softap_ipinfo(void) 
 {

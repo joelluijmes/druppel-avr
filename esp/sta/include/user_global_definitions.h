@@ -14,9 +14,9 @@ extern volatile uint32_t PIN_IN;
 extern volatile uint32_t PIN_0;
 extern volatile uint32_t PIN_2;
 
-extern volatile uint8_t wifi_status; 
+// extern volatile uint8_t wifi_status; 
 
-#define WIFI_BUSY 0x01
-#define WIFI_READY 0x02
+// #define WIFI_BUSY 0x01
+// #define WIFI_READY 0x02
 
 #endif
