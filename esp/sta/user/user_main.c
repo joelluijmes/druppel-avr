@@ -1,9 +1,8 @@
 /******************************************************************************
- * Copyright 2013-2014 Espressif Systems (Wuxi)
  *
  * FileName: user_main.c
  *
- * Description: entry file of user application
+ * Description: main STA file
  *
  * Modification history:
  *     2015/1/23, v1.0 create this file.
@@ -34,14 +33,12 @@ os_install_putc1((void *)uart1_write_char);
 #include "user_interface.h"
 #include "user_global_definitions.h"
 
-#include "user_config.h"
-
 #include "user_state.h"
 
 static void ICACHE_FLASH_ATTR 
 init_done_cb() {
     // Wifi connect to ap
-    os_delay_us(2000*1000); 
+    // os_delay_us(2000*1000); 
 
     update_state(STATE_CONNECT);                               // Connecting to ap and set sleep mode to no sleep
 }
@@ -80,7 +77,6 @@ user_rf_pre_init(void)
 void ICACHE_FLASH_ATTR
 user_init(void)
 {
-    //uart_init(BIT_RATE_115200, BIT_RATE_115200);
     uart_div_modify(0, UART_CLK_FREQ / 115200);                     // Enable dev stream to uart 0 
     os_printf("\r\nUser init...\n"); 
 

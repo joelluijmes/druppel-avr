@@ -39,15 +39,14 @@ tcpclient_update_state(state state)
         return; 
 
     // TODO: check illegal states
+    // TODO: espconn_state-> esp_conn->state... checking...
     switch(state)
     {
     case STATE_IDLE:
         break; 
     case STATE_CONNECT: 
         if(tcp_state == STATE_CONNECTED || tcp_state == STATE_BUSY) {
-            os_printf("returning state: %d %d %d \n", tcp_state, STATE_CONNECTED, STATE_BUSY);
-            if(tcp_state == STATE_DISCONNECTED)
-                os_printf("it's disconnected");
+            //os_printf("returning state: %d %d %d \n", tcp_state, STATE_CONNECTED, STATE_BUSY);
             return; 
         }
         os_printf("Making connection\n"); 
