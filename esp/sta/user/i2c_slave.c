@@ -163,8 +163,6 @@ i2c_slave_reading_address() {
         if(i2c_byte_number == 1 && i2c_byte_buffer[0] == 255)               // Received command... 
         {
             tcpclient_update_state(i2c_byte_buffer[1]);
-            //tcpclient_update_state(STATE_CONNECT);
-
 
             os_delay_us(500*1000);
 
@@ -221,6 +219,9 @@ i2c_slave_writing_address()
         while(!I2C_READ_PIN(SCL_PIN));                      // Wait until SCL become high
 
         if(GPIO_INPUT_GET(SDA_PIN) > 0) {
+            if(tcpclient_get_state() == STATE_IDLE || tcpclient_get_state() == STATE_DISCONNECTED)
+                tcpclient_update_state(STATE_CONNECT);
+
             i2c_update_status(I2C_READING_START);           // Received NACK
             i2c_return_interrupt(); 
             os_printf("Writing status done, received nack from master\n");

@@ -42,16 +42,19 @@ tcpclient_update_state(state state)
     if(tcp_state == state)                                        // Do nothing if state is the same
         return; 
 
-    switch(state) 
+    // TODO: check illegal states
+    switch(state)
     {
-    case STATE_IDLE: 
+    case STATE_IDLE:
         break; 
     case STATE_CONNECT: 
+        if(tcp_state == STATE_CONNECTED || tcp_state  == STATE_BUSY)
+            return; 
         user_tcpclient_init();                                        // Connect to server
         break;
     case STATE_DISCONNECT: 
         espconn_disconnect(&esp_conn);                                  // Disconnect tcp connection
-        break; 
+        break;
     case STATE_CONNECTED:
         break;
     case STATE_DISCONNECTED:
