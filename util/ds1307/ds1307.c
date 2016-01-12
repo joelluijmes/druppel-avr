@@ -1,6 +1,4 @@
-#include <avr/io.h>
 #include "ds1307.h"
-#include "twi.h"
 
 const uint8_t days_in_month[] = { 31,28,31,30,31,30,31,31,30,31,30,31 };
 
@@ -11,7 +9,8 @@ static uint32_t time2long(uint16_t days, uint8_t hours, uint8_t minutes, uint8_t
 
 uint32_t read_unix_time()
 {
-	DS1307 time = read_ds1307(); 
+	DS1307 time;
+	read_ds1307(&time); 
 	uint32_t unixtime = time2long(date2days(time.year, time.month, time.day), time.hour, time.minute, time.second);
 	return unixtime + SECONDS_FROM_1970_TO_2000;
 }
@@ -37,6 +36,8 @@ static DS1307 read_ds1307()
 	time.day 	= bcd2dec(twi_read());
 	time.month 	= bcd2dec(twi_read());
 	time.year 	= bcd2dec(twi_read());
+
+	twi_stop(); 
 
     return time;
 }

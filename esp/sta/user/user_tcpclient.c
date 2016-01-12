@@ -14,16 +14,56 @@
 #include "espconn.h"
 #include "mem.h"
 
+#include "user_state.h"
+//#include "user_global_definitions.h"
+#include "i2c_slave.h"
 
-#include "user_i2c.h"
+
+static state tcp_state;                                         // TCP connection state
+
+static bool DISCONNECT_AFTER_SENT;
+
+static uint8_t tcp_buffer[70];
+static uint8_t tcp_bytes;
+
+static struct espconn esp_conn;
+static esp_tcp esptcp;
 
 
-LOCAL struct espconn esp_conn;
-LOCAL esp_tcp esptcp;
+state ICACHE_FLASH_ATTR
+tcpclient_get_state()
+{
+    return tcp_state;
+}
 
-LOCAL bool DISCONNECT_AFTER_SENT;
+void ICACHE_FLASH_ATTR
+tcpclient_update_state(state state)
+{
+    if(tcp_state == state)                                        // Do nothing if state is the same
+        return; 
 
-ip_addr_t tcp_server_ip;
+    // TODO: check illegal states
+    switch(state)
+    {
+    case STATE_IDLE:
+        break; 
+    case STATE_CONNECT: 
+        if(tcp_state == STATE_CONNECTED || tcp_state  == STATE_BUSY)
+            return; 
+        user_tcpclient_init();                                        // Connect to server
+        break;
+    case STATE_DISCONNECT: 
+        espconn_disconnect(&esp_conn);                                  // Disconnect tcp connection
+        break;
+    case STATE_CONNECTED:
+        break;
+    case STATE_DISCONNECTED:
+        break;
+    default:
+        break;
+    }
+    tcp_state = state; 
+}
 
 void ICACHE_FLASH_ATTR
 tcpclient_recv_cb(void *arg, char *data, unsigned short length)
@@ -39,23 +79,10 @@ tcpclient_recv_cb(void *arg, char *data, unsigned short length)
         // Receive OK so we can sent the sensor data:)
         // TODO send data to supertiny to check if receive data is allowed...
 
-        struct DS1307 time; 
-        user_ds1307_read(&time);
+        tcp_state = STATE_CONNECTED;
 
-        char *pbuf = (char *)os_zalloc(packet_size);
-
-        os_sprintf(pbuf, "DATETIME: %d:%d:%d %d-%d-%d \n", 
-            bcd2dec(time.hour & 0x3f),
-            bcd2dec(time.minute), 
-            bcd2dec(time.second & 0x7f), 
-            bcd2dec(time.day),
-            bcd2dec(time.month),
-            bcd2dec(time.year)
-        );
-
-
-        DISCONNECT_AFTER_SENT = true; 
-        espconn_sent(pespconn, pbuf, os_strlen(pbuf));
+        // DISCONNECT_AFTER_SENT = true; 
+        // espconn_sent(pespconn, tcp_buffer, tcp_bytes);
     }
 
 }
@@ -66,7 +93,9 @@ tcpclient_sent_cb(void *arg)
     struct espconn *pespconn = arg;
     os_printf("Data is sent! \r\n");
 
-    if(DISCONNECT_AFTER_SENT) 
+    tcp_state = STATE_CONNECTED;
+
+    if(DISCONNECT_AFTER_SENT)
         espconn_disconnect(pespconn);
 }
 
@@ -76,26 +105,21 @@ tcpclient_discon_cb(void *arg)
 	// Memory freed automaticaly
 	os_printf("TCP disconnect succeed\n");
 
-    system_soft_wdt_restart(); 
-    os_delay_us(2500*1000); 
-    system_soft_wdt_restart(); 
-    os_delay_us(2500*1000); 
-    // system_soft_wdt_restart(); 
-    // os_delay_us(2500*1000); 
-    // system_soft_wdt_restart(); 
-
-    system_soft_wdt_feed(); 
-    user_tcpclient_init(); 
+    tcp_state = STATE_DISCONNECTED;
 }
 
 void ICACHE_FLASH_ATTR
-tcpclient_sent_data(struct espconn *pespconn, uint8 *data)
+tcpclient_sent_data(struct espconn *pespconn, uint8 *data, uint8_t length)
 {
+    if(tcp_state != STATE_CONNECTED)
+        return; 
     //sint8 espconn_sent(struct espconn *espconn, uint8 *psent, uint16 length);
 	//char *pbuf = (char *)os_zalloc(packet_size);
 
 	// char buffer[] = "AR";  // AR request
 	// os_sprintf(pbuf, buffer);
+
+    tcp_state = STATE_BUSY;
 
 	espconn_sent(pespconn, data, os_strlen(data));
 
@@ -103,9 +127,25 @@ tcpclient_sent_data(struct espconn *pespconn, uint8 *data)
 }
 
 void ICACHE_FLASH_ATTR
+tcpclient_sent_data_test(uint8_t *data, uint8_t length)
+{
+    if(tcp_state != STATE_CONNECTED) {
+        os_printf("TCP: no connection, can't send data\n");
+        return; 
+    }
+
+    os_printf("data %d %d\n", data[0], data[1]);
+
+    tcp_state = STATE_BUSY;
+
+    espconn_send(&esp_conn, data, os_strlen(data));
+}
+
+void ICACHE_FLASH_ATTR
 tcpclient_connect_cb(void *arg)
 {
     struct espconn *pespconn = arg;
+    tcp_state = STATE_CONNECTED; 
     os_printf("TCP connected! \r\n");
 
     espconn_regist_recvcb(pespconn, tcpclient_recv_cb);
@@ -115,12 +155,12 @@ tcpclient_connect_cb(void *arg)
     char buffer[] = "AR";
 
    	// TCP connected so sent the data
-    tcpclient_sent_data(pespconn, buffer);
+    tcpclient_sent_data(pespconn, buffer, os_strlen(buffer));
     //os_free(buffer); 
 }
 
 void ICACHE_FLASH_ATTR
-user_tcpclient_init(void)
+user_tcpclient_init()
 {
     DISCONNECT_AFTER_SENT = false; 
 
@@ -132,9 +172,13 @@ user_tcpclient_init(void)
 
     const char ip[] = SERVER_IP;
 	os_memcpy(esp_conn.proto.tcp->remote_ip, ip, 4);
-	//os_printf("%d", ip[0]);
 
     espconn_regist_connectcb(&esp_conn, tcpclient_connect_cb);
+
+
+    // tcp_bytes = buflen; 
+    // os_memcpy(tcp_buffer, buf, buflen);
+    // os_printf("%d, %d %d", buflen, buf[0], buf[1]);
 
     // Make tcp connection
     // This is a asynchronous call wich will performed later
