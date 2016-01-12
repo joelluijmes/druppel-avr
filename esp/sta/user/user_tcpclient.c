@@ -48,8 +48,13 @@ tcpclient_update_state(state state)
     case STATE_IDLE:
         break; 
     case STATE_CONNECT: 
-        if(tcp_state == STATE_CONNECTED || tcp_state  == STATE_BUSY)
+        if(tcp_state == STATE_CONNECTED || tcp_state == STATE_BUSY) {
+            os_printf("returning state: %d %d %d \n", tcp_state, STATE_CONNECTED, STATE_BUSY);
+            if(tcp_state == STATE_DISCONNECTED)
+                os_printf("it's disconnected");
             return; 
+        }
+        os_printf("Making connection\n"); 
         user_tcpclient_init();                                        // Connect to server
         break;
     case STATE_DISCONNECT: 
@@ -138,7 +143,8 @@ tcpclient_sent_data_test(uint8_t *data, uint8_t length)
 
     tcp_state = STATE_BUSY;
 
-    espconn_send(&esp_conn, data, os_strlen(data));
+    //espconn_send(&esp_conn, data, os_strlen(data));
+    espconn_send(&esp_conn, data, length);
 }
 
 void ICACHE_FLASH_ATTR

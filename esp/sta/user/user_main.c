@@ -52,7 +52,8 @@ init_done_cb() {
     // Wifi connect to ap
     os_delay_us(2000*1000); 
 
-   update_state(STATE_CONNECT);                               // Connecting to ap and set sleep mode to no sleep
+
+    update_state(STATE_CONNECT);                               // Connecting to ap and set sleep mode to no sleep
 }
 
 LOCAL void event_cb(System_Event_t *event) {
@@ -62,7 +63,7 @@ LOCAL void event_cb(System_Event_t *event) {
         break;
     case EVENT_STAMODE_DISCONNECTED:
         os_printf("Event: EVENT_STAMODE_DISCONNECTED\n");
-        os_printf("Reason: %d\n", &event->event_info.disconnected.reason);
+        os_printf("Reason: %d\n", event->event_info.disconnected.reason);
         break;
     case EVENT_STAMODE_AUTHMODE_CHANGE:
         os_printf("Event: EVENT_STAMODE_AUTHMODE_CHANGE\n");

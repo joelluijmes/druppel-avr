@@ -22,9 +22,9 @@
 #define CR_TICK (1 << USIWM1 | 1 << USICS1 | 1 << USICLK | 1 << USITC)
 
 // Atmel stuff (AVR310)
-#define TWI_FAST_MODE
+//#define TWI_FAST_MODE
 
-#define SYS_CLK   4000.0  // [kHz]
+#define SYS_CLK   12000.0  // [kHz]     12000 = 90khz, 14000 = 80 khz
 
 #ifdef TWI_FAST_MODE               // TWI FAST mode timing limits. SCL = 100-400kHz
 #define T2_TWI    ((SYS_CLK *1300) /1000000) +1 // >1,3us

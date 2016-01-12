@@ -20,10 +20,6 @@
 void ICACHE_FLASH_ATTR 
 user_uart_init(void)
 {
-
-
-
-
     os_install_putc1((void *)uart1_write_char);
 
 

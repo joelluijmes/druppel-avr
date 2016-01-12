@@ -14,7 +14,6 @@
 #include "user_interface.h"
 
 #include "user_state.h"
-
 #include "i2c_slave.h"
 
 static state wifi_state;
@@ -49,24 +48,7 @@ update_state(state state)
         break;
     case STATE_DISCONNECTED: 
         i2c_slave_stop(); 
-        break; 
-
-    // case I2C_READING_ADDRESS:
-    //     ETS_GPIO_INTR_ATTACH(i2c_slave_reading_address, SCL_PIN);      // GPIO2 interrupt handler
-    //     gpio_pin_intr_state_set(SCL_PIN, 1);                            // Interrupt on positive edge
-    //     i2c_bit_number = 7; 
-    //     i2c_byte_number = -1; 
-    //     break;
-    // case I2C_READING_BYTES:
-    //     ETS_GPIO_INTR_ATTACH(i2c_slave_reading_address, SCL_PIN);      // GPIO2 interrupt handler
-    //     gpio_pin_intr_state_set(SCL_PIN, 1);                            // Interrupt on positive edge
-    //     i2c_bit_number = 7; 
-    //     break;
-    // case I2C_WRITING_BYTES:
-    //     ETS_GPIO_INTR_ATTACH(i2c_slave_writing_address, SCL_PIN);      // GPIO2 interrupt handler
-    //     gpio_pin_intr_state_set(SCL_PIN, 2);                            // Interrupt on negative edge
-    //     i2c_bit_number = 8; // One for disable ack 
-    //     break;
+        break;
     default:
         break;
     }

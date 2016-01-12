@@ -71,7 +71,7 @@ i2c_slave_stop(void)
 *  2: negative edge
 *  3: any egde
 */
-void ICACHE_FLASH_ATTR
+void
 i2c_update_status(uint8_t status)
 {
     // We're assuming that interrupts are disabled
@@ -136,7 +136,7 @@ i2c_slave_reading_address() {
 
         if(i2c_status == I2C_READING_ADDRESS) {
             if((i2c_buffer >> 1) != I2C_SLAVE_ADDRESS) {
-                //os_printf("I2C: Reading restart, received address: %d, 0x%x \n", i2c_buffer, i2c_buffer);
+                os_printf("I2C: Reading restart, received address: %d, 0x%x \n", i2c_buffer, i2c_buffer);
                 i2c_update_status(I2C_READING_START);
                 return i2c_return_interrupt(); 
             }
@@ -221,10 +221,12 @@ i2c_slave_writing_address()
         if(GPIO_INPUT_GET(SDA_PIN) > 0) {
             if(tcpclient_get_state() == STATE_IDLE || tcpclient_get_state() == STATE_DISCONNECTED)
                 tcpclient_update_state(STATE_CONNECT);
+            else if(tcpclient_get_state() != STATE_CONNECTED)
+                os_printf("status is %d\n", tcpclient_get_state());
 
             i2c_update_status(I2C_READING_START);           // Received NACK
             i2c_return_interrupt(); 
-            os_printf("Writing status done, received nack from master\n");
+            //os_printf("Writing status done, received nack from master\n");
             return; 
 
         } else {
@@ -237,7 +239,7 @@ i2c_slave_writing_address()
     i2c_return_interrupt(); 
 }
 
-static void ICACHE_FLASH_ATTR
+static void
 i2c_return_interrupt() 
 {
     uint32 gpio_status;
