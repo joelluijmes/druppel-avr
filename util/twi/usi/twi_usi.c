@@ -162,8 +162,8 @@ TWRESULT usi_start_master(uint8_t slave_addr, uint8_t transmitting)
     // Data is the slave address and the bit if we are sending or receiving
     uint8_t data = (slave_addr << 1) | (transmitting ? 0x00 : 0x01);
     return usi_write_master(data)
-    ? TWST_OK                              // Didn't receive ack :(
-    : TWST_MASTER_NACK;
+		? TWST_OK                              // Didn't receive ack :(
+		: TWST_MASTER_NACK;
 }
 
 uint8_t usi_write_master(uint8_t data)
@@ -185,7 +185,7 @@ uint8_t usi_write_master(uint8_t data)
     USIDR = 0xFF;
     SDA_OUTPUT();
 
-    return tmp;
+    return !(tmp & 0x01);
 }
 
 uint8_t usi_write_slave(uint8_t data)
