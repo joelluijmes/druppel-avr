@@ -25,3 +25,13 @@ uint8_t usi_read_master(uint8_t nack);
 uint8_t usi_write_slave(uint8_t data);
 uint8_t usi_read_slave();
 TWRESULT usi_stop();
+
+static inline uint8_t usi_available() 
+{
+	return (USISR & (1 << USIOIF));
+}
+
+static inline uint8_t usi_is_stop()
+{
+	return (USISR & (1 << USIPF));
+}
