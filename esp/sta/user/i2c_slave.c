@@ -29,6 +29,14 @@ volatile int8_t     clockpulses;        // Debug
 #define READ_PIN(pin) (!!(PIN_IN & ( 1  << pin )))    // outputs 0 or 1
 #define I2C_READ_PIN(pin) (PIN_IN & ( 1  << pin ))
 #define I2C_SDA_SET(value) ((value > 0) ? (PIN_OUT_SET = 1 << SDA_PIN) : (PIN_OUT_CLEAR = 1 << SDA_PIN))
+// #define IS_DEBUG(function) { \
+//     #ifdef DEBUG            \
+//     function                \
+//     #endif                  \
+// }
+            // #ifdef DEBUG
+            // IS_DEBUG(os_printf("Received %d bytes\n", i2c_byte_number));
+            // #endif
 
 static void i2c_slave_reading_start();
 static void i2c_slave_reading_address();
@@ -185,7 +193,7 @@ i2c_slave_reading_address() {
 
             //i2c_update_status(I2C_IDLE);
             // user_tcpclient_init(&i2c_byte_buffer[1], i2c_byte_number);
-            tcpclient_sent_data_test(&i2c_byte_buffer[1], i2c_byte_number); 
+            tcpclient_send_data(&i2c_byte_buffer[1], i2c_byte_number, KEEP_ALIVE); 
 
             i2c_update_status(I2C_READING_START);
             return i2c_return_interrupt(); 
@@ -225,7 +233,6 @@ i2c_slave_writing_address()
             i2c_return_interrupt(); 
             //os_printf("Writing status done, received nack from master\n");
             return; 
-
         } else {
             i2c_bit_number == 7;                            // Received ACK
         }
@@ -239,16 +246,15 @@ i2c_slave_writing_address()
 static void
 i2c_return_interrupt() 
 {
-    uint32 gpio_status;
-    gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
-    //clear interrupt status
-    GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, gpio_status);
+    //uint32 gpio_status;
+    uint32_t gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
+    GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, gpio_status);                  // Clear interrupt status
 
-    ETS_GPIO_INTR_ENABLE(); // Enable gpio interrupts
+    ETS_GPIO_INTR_ENABLE();                                                 // Enable gpio interrupts
 }
 
 void ICACHE_FLASH_ATTR
-print_debug_info(void *arg) // in Arduino this is loop the main loop
+print_debug_info(void *arg)
 {
     if(clockpulses != 0) {
         os_printf("DEBUG, count: %d, clockpulses: %d\n", i2c_bit_number, clockpulses);
@@ -269,8 +275,6 @@ print_debug_info(void *arg) // in Arduino this is loop the main loop
 
     os_memset(&i2c_byte_buffer[0], 0, sizeof(i2c_byte_buffer));
 
-    //i2c_slave_intr_init();
-
     // stime = system_get_time(); 
     // reading_address = system_get_time() - stime; 
 
@@ -281,17 +285,14 @@ print_debug_info(void *arg) // in Arduino this is loop the main loop
 // Otherwise switching interrupts is to late... 
 static void ICACHE_FLASH_ATTR
 i2c_slave_reading_start() {
-    ETS_GPIO_INTR_DISABLE(); // Disable gpio interrupts
+    ETS_GPIO_INTR_DISABLE();                                // Disable gpio interrupts
 
-    if(I2C_READ_PIN(SCL_PIN))                       // If start condition is sent
+    if(I2C_READ_PIN(SCL_PIN))                               // If valid I2C start condition is sent
     {
-        i2c_update_status(I2C_READING_ADDRESS);     // Start reading an address
-        //i2c_slave_reading_address();
-    } else {
-        //os_printf("Not a start condition\n");
+        i2c_update_status(I2C_READING_ADDRESS);             // Start reading an address
     }
-
-    i2c_return_interrupt(); 
+    
+    i2c_return_interrupt();
 }
 
 void ICACHE_FLASH_ATTR 

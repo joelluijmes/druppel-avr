@@ -1,6 +1,9 @@
 #ifndef __USER_STATE_H__
 #define __USER_STATE_H__
 
+#define CLOSE 0
+#define KEEP_ALIVE 1
+
 enum state
 {
     STATE_IDLE = 0, 

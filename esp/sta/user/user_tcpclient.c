@@ -15,16 +15,12 @@
 #include "user_tcpclient.h"
 #include "user_state.h"
 
-static state tcp_state;                                         // TCP connection state
 
-static bool DISCONNECT_AFTER_SENT;
+static bool DISCONNECT_AFTER_SENT;                                      // Close tcp connection after send callback
+static state tcp_state;                                                 // TCP connection state
 
-static uint8_t tcp_buffer[70];
-static uint8_t tcp_bytes;
-
-static struct espconn esp_conn;
+static struct espconn esp_conn;                                         // Holding the tcp connection
 static esp_tcp esptcp;
-
 
 state ICACHE_FLASH_ATTR
 tcpclient_get_state()
@@ -35,22 +31,20 @@ tcpclient_get_state()
 void ICACHE_FLASH_ATTR
 tcpclient_update_state(state state)
 {
-    if(tcp_state == state)                                        // Do nothing if state is the same
+    if(tcp_state == state)                                              // Do nothing if state is the same
         return; 
 
     // TODO: check illegal states
-    // TODO: espconn_state-> esp_conn->state... checking...
     switch(state)
     {
     case STATE_IDLE:
         break; 
     case STATE_CONNECT: 
-        if(tcp_state == STATE_CONNECTED || tcp_state == STATE_BUSY) {
-            //os_printf("returning state: %d %d %d \n", tcp_state, STATE_CONNECTED, STATE_BUSY);
+        if(tcp_state == STATE_CONNECTED || tcp_state == STATE_BUSY)
             return; 
-        }
+
         os_printf("Making connection\n"); 
-        user_tcpclient_init();                                        // Connect to server
+        user_tcpclient_init();                                          // Connect to server
         break;
     case STATE_DISCONNECT: 
         espconn_disconnect(&esp_conn);                                  // Disconnect tcp connection
@@ -66,23 +60,18 @@ tcpclient_update_state(state state)
 }
 
 void ICACHE_FLASH_ATTR
-tcpclient_recv_cb(void *arg, char *data, unsigned short length)
+tcpclient_recv_cb(void *arg, char *data, unsigned short length)         // Received some data from tcp connection
 {
-	struct espconn *pespconn = arg;
-	//received some data from tcp connection
+	struct espconn *pespconn = arg;                                     // Pointer to esp connection
 
 	os_printf("TCP recv data length: %d \r\n", length);
 	os_printf("%s \n", data);
 
-    if(length == 2 && strcmp("OK", data) == 0) 
+    if(length == 2 && strcmp("OK", data) == 0)                          // Check if emmer is ready
     {
-        // Receive OK so we can sent the sensor data:)
-        // TODO send data to supertiny to check if receive data is allowed...
+        // Receive OK so our tcp connection is ready
 
-        tcp_state = STATE_CONNECTED;
-
-        // DISCONNECT_AFTER_SENT = true; 
-        // espconn_sent(pespconn, tcp_buffer, tcp_bytes);
+        tcp_state = STATE_CONNECTED;                                    // Update state to let know tcp connection is ready
     }
 
 }
@@ -90,13 +79,13 @@ tcpclient_recv_cb(void *arg, char *data, unsigned short length)
 void ICACHE_FLASH_ATTR
 tcpclient_sent_cb(void *arg)
 {
-    struct espconn *pespconn = arg;
+    struct espconn *pespconn = arg;                                     // Pointer to esp connection
     os_printf("Data is sent! \r\n");
 
-    tcp_state = STATE_CONNECTED;
+    tcp_state = STATE_CONNECTED;                                        // Update state to let know tcp connection is ready
 
-    if(DISCONNECT_AFTER_SENT)
-        espconn_disconnect(pespconn);
+    if(DISCONNECT_AFTER_SENT == CLOSE)
+        espconn_disconnect(pespconn);                                   // Close tcp connection
 }
 
 void ICACHE_FLASH_ATTR
@@ -105,40 +94,19 @@ tcpclient_discon_cb(void *arg)
 	// Memory freed automaticaly
 	os_printf("TCP disconnect succeed\n");
 
-    tcp_state = STATE_DISCONNECTED;
+    tcp_state = STATE_DISCONNECTED;                                     // Update state to disconnected
 }
 
 void ICACHE_FLASH_ATTR
-tcpclient_sent_data(struct espconn *pespconn, uint8 *data, uint8_t length)
-{
-    if(tcp_state != STATE_CONNECTED)
-        return; 
-    //sint8 espconn_sent(struct espconn *espconn, uint8 *psent, uint16 length);
-	//char *pbuf = (char *)os_zalloc(packet_size);
-
-	// char buffer[] = "AR";  // AR request
-	// os_sprintf(pbuf, buffer);
-
-    tcp_state = STATE_BUSY;
-
-	espconn_sent(pespconn, data, os_strlen(data));
-
-	//os_free(pbuf);
-}
-
-void ICACHE_FLASH_ATTR
-tcpclient_sent_data_test(uint8_t *data, uint8_t length)
+tcpclient_send_data(uint8_t *data, uint8_t length, uint8_t keepAlive)
 {
     if(tcp_state != STATE_CONNECTED) {
         os_printf("TCP: no connection, can't send data\n");
         return; 
     }
-
-    os_printf("data %d %d\n", data[0], data[1]);
+    DISCONNECT_AFTER_SENT = keepAlive;
 
     tcp_state = STATE_BUSY;
-
-    //espconn_send(&esp_conn, data, os_strlen(data));
     espconn_send(&esp_conn, data, length);
 }
 
@@ -154,10 +122,7 @@ tcpclient_connect_cb(void *arg)
    	espconn_regist_disconcb(pespconn, tcpclient_discon_cb);
    
     char buffer[] = "AR";
-
-   	// TCP connected so sent the data
-    tcpclient_sent_data(pespconn, buffer, os_strlen(buffer));
-    //os_free(buffer); 
+    tcpclient_send_data(buffer, os_strlen(buffer), KEEP_ALIVE);           // TCP send request if tcp server is ready
 }
 
 void ICACHE_FLASH_ATTR
@@ -174,16 +139,9 @@ user_tcpclient_init()
     const char ip[] = SERVER_IP;
 	os_memcpy(esp_conn.proto.tcp->remote_ip, ip, 4);
 
-    espconn_regist_connectcb(&esp_conn, tcpclient_connect_cb);
+    espconn_regist_connectcb(&esp_conn, tcpclient_connect_cb);          // Register callback function
 
-
-    // tcp_bytes = buflen; 
-    // os_memcpy(tcp_buffer, buf, buflen);
-    // os_printf("%d, %d %d", buflen, buf[0], buf[1]);
-
-    // Make tcp connection
-    // This is a asynchronous call wich will performed later
-    sint8 ret = espconn_connect(&esp_conn); 
+    sint8 ret = espconn_connect(&esp_conn);                             // Make tcp connection, this is a asynchronous call wich will performed later
 
     os_printf("ESP is connecting to remote server [%d]!\r\n", ret);
 }
