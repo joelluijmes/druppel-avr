@@ -29,11 +29,15 @@ volatile int8_t     clockpulses;        // Debug
 #define READ_PIN(pin) (!!(PIN_IN & ( 1  << pin )))    // outputs 0 or 1
 #define I2C_READ_PIN(pin) (PIN_IN & ( 1  << pin ))
 #define I2C_SDA_SET(value) ((value > 0) ? (PIN_OUT_SET = 1 << SDA_PIN) : (PIN_OUT_CLEAR = 1 << SDA_PIN))
-// #define IS_DEBUG(function) { \
-//     #ifdef DEBUG            \
-//     function                \
-//     #endif                  \
-// }
+
+#define DEBUG 1
+
+#ifdef DEBUG
+    #define IS_DEBUG( func__ ) ( func__ )
+#else
+    #define IS_DEBUG( func__ )
+#endif     
+
             // #ifdef DEBUG
             // IS_DEBUG(os_printf("Received %d bytes\n", i2c_byte_number));
             // #endif
@@ -48,7 +52,7 @@ static uint8_t i2c_status;
 void ICACHE_FLASH_ATTR 
 i2c_slave_init(void)
 {
-    os_printf("I2C: init\n");
+    IS_DEBUG(os_printf("I2C: init\n")); 
     PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0);            // SET GPIO function, not uart...
     PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_GPIO2);            // SET GPIO function, not uart...
 

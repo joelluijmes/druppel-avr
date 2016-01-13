@@ -164,8 +164,7 @@ tcpclient_check_state(void)
         tcpclient_update_state(STATE_DISCONNECT); 
 
     esp_conn_wd_state = esp_conn.state; 
-    os_printf("tcp state: %d %d %d \n", esp_conn.state, ESPCONN_CLOSE, tcpclient_get_state());
-
+    //os_printf("tcp state: %d %d %d \n", esp_conn.state, ESPCONN_CLOSE, tcpclient_get_state());
 }
 
 static void ICACHE_FLASH_ATTR 
