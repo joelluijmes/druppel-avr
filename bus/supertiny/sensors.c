@@ -2,8 +2,8 @@
 
 #define SENSORS_RECEIVE_BUFFER_SIZE 0x10
 
-#define SENSORS_ADDRESS_START 0x11
-#define SENSORS_ADDRESS_END 0x12
+#define SENSORS_ADDRESS_START 0x10
+#define SENSORS_ADDRESS_END 0x11
 #define SENSORS_ADDRESS_LEN (SENSORS_ADDRESS_END - SENSORS_ADDRESS_START + 1)
 
 #define DATA_HEADER_LEN  6
@@ -34,7 +34,7 @@ static int8_t read_sensor(uint8_t slave_address, uint8_t* buf, uint8_t len);
 
 uint8_t sensor_fill(uint32_t time, uint8_t* data, uint8_t datalen)
 {
-	state _states[SENSORS_ADDRESS_LEN] = {};
+	state _states[SENSORS_ADDRESS_LEN] = {0};
 	uint8_t offset = 0;
 
 	uint8_t completed = 0;												// 'dirty' flag, will be cleared by every sensor if their state has changed
@@ -67,7 +67,7 @@ uint8_t sensor_fill(uint32_t time, uint8_t* data, uint8_t datalen)
 					data[offset + sizeof(uint32_t)] = len;
 
 					*p_state = STATE_COMPLETED;
-					offset += len;
+					offset += len + DATA_HEADER_LEN;
 					continue;
 				}
 				else if (len < 0)										// woudln't fit in the buffers
