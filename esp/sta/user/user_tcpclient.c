@@ -21,6 +21,11 @@ static state tcp_state;                                                 // TCP c
 
 static struct espconn esp_conn;                                         // Holding the tcp connection
 static esp_tcp esptcp;
+static uint8_t esp_conn_wd_state; 
+
+static void tcpclient_wd_timer(void);
+
+static volatile os_timer_t wdtimer;
 
 state ICACHE_FLASH_ATTR
 tcpclient_get_state()
@@ -31,22 +36,27 @@ tcpclient_get_state()
 void ICACHE_FLASH_ATTR
 tcpclient_update_state(state state)
 {
-    if(tcp_state == state)                                              // Do nothing if state is the same
-        return; 
+    //if(tcp_state == state)                                              // Do nothing if state is the same
+    //    return;
 
     // TODO: check illegal states
     switch(state)
     {
     case STATE_IDLE:
         break; 
-    case STATE_CONNECT: 
-        if(tcp_state == STATE_CONNECTED || tcp_state == STATE_BUSY)
-            return; 
+    case STATE_CONNECT:
+        if(tcp_state == STATE_CONNECTED
+            || tcp_state == STATE_BUSY 
+            || (tcp_state == STATE_CONNECT && esp_conn.state != ESPCONN_CLOSE)
+        ) {
+            return;
+        }
 
-        os_printf("Making connection\n"); 
+        os_printf("Making connection state: %d \n", tcp_state); 
         user_tcpclient_init();                                          // Connect to server
         break;
     case STATE_DISCONNECT: 
+        os_printf("disconnecting\n");
         espconn_disconnect(&esp_conn);                                  // Disconnect tcp connection
         break;
     case STATE_CONNECTED:
@@ -129,6 +139,7 @@ void ICACHE_FLASH_ATTR
 user_tcpclient_init()
 {
     DISCONNECT_AFTER_SENT = false; 
+    tcpclient_wd_timer(); 
 
     esp_conn.type = ESPCONN_TCP;
     esp_conn.state = ESPCONN_NONE;
@@ -144,4 +155,31 @@ user_tcpclient_init()
     sint8 ret = espconn_connect(&esp_conn);                             // Make tcp connection, this is a asynchronous call wich will performed later
 
     os_printf("ESP is connecting to remote server [%d]!\r\n", ret);
+}
+
+static void ICACHE_FLASH_ATTR 
+tcpclient_check_state(void)
+{
+    if(tcp_state == STATE_BUSY && esp_conn_wd_state == ESPCONN_WRITE && esp_conn.state == ESPCONN_WRITE)
+        tcpclient_update_state(STATE_DISCONNECT); 
+
+    esp_conn_wd_state = esp_conn.state; 
+    os_printf("tcp state: %d %d %d \n", esp_conn.state, ESPCONN_CLOSE, tcpclient_get_state());
+
+}
+
+static void ICACHE_FLASH_ATTR 
+tcpclient_wd_timer(void)
+{
+    //Disarm timer
+    os_timer_disarm(&wdtimer);
+
+    //Setup timer
+    os_timer_setfn(&wdtimer, (os_timer_func_t *)tcpclient_check_state, NULL);
+
+    //Arm the timer
+    //&some_timer is the pointer
+    //1000 is the fire time in ms
+    //0 for once and 1 for repeating
+    os_timer_arm(&wdtimer, 1000, 1);
 }

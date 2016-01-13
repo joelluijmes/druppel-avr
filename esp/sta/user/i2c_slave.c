@@ -56,7 +56,7 @@ i2c_slave_init(void)
     gpio_output_set(0, 0, 0, GPIO_ID_PIN(SDA_PIN));
     gpio_output_set(0, 0, 0, GPIO_ID_PIN(SCL_PIN));
 
-    user_i2c_debug(); 
+    user_i2c_debug();
 
     i2c_update_status(I2C_READING_START);   
     
@@ -224,10 +224,12 @@ i2c_slave_writing_address()
         while(!I2C_READ_PIN(SCL_PIN));                      // Wait until SCL become high
 
         if(I2C_READ_PIN(SDA_PIN) > 0) {
-            if(tcpclient_get_state() == STATE_IDLE || tcpclient_get_state() == STATE_DISCONNECTED)
-                tcpclient_update_state(STATE_CONNECT);
-            else if(tcpclient_get_state() != STATE_CONNECTED)
-                os_printf("status is %d\n", tcpclient_get_state());
+            //if(!(tcpclient_get_state() == STATE_CONNECTED || tcpclient_get_state() == STATE_BUSY))
+            tcpclient_update_state(STATE_CONNECT);
+            // if(tcpclient_get_state() == STATE_IDLE || tcpclient_get_state() == STATE_DISCONNECTED)
+            //     tcpclient_update_state(STATE_CONNECT);
+            // else if(tcpclient_get_state() != STATE_CONNECTED)
+            //     os_printf("status is %d\n", tcpclient_get_state());
 
             i2c_update_status(I2C_READING_START);           // Received NACK
             i2c_return_interrupt(); 
@@ -291,7 +293,7 @@ i2c_slave_reading_start() {
     {
         i2c_update_status(I2C_READING_ADDRESS);             // Start reading an address
     }
-    
+
     i2c_return_interrupt();
 }
 
