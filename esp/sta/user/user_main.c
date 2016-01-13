@@ -1,9 +1,8 @@
 /******************************************************************************
- * Copyright 2013-2014 Espressif Systems (Wuxi)
  *
  * FileName: user_main.c
  *
- * Description: entry file of user application
+ * Description: main STA file
  *
  * Modification history:
  *     2015/1/23, v1.0 create this file.
@@ -29,30 +28,19 @@ os_install_putc1((void *)uart1_write_char);
 
 #include "ets_sys.h"
 #include "osapi.h"
-#include "gpio.h"
-//#include "user_uart.h"
 #include "user_sta.h"
 #include "user_tcpclient.h"
 #include "user_interface.h"
 #include "user_global_definitions.h"
 
-#include "user_config.h"
-
 #include "user_state.h"
-//#include "driver/uart.h"
-
-static char hwaddr[6];
-#define MACSTR "%02x:%02x:%02x:%02x:%02x:%02x"
-#define MAC2STR(a) (a)[0], (a)[1], (a)[2], (a)[3], (a)[4], (a)[5]
-
 
 static void ICACHE_FLASH_ATTR 
 init_done_cb() {
-
     // Wifi connect to ap
-    os_delay_us(2000*1000); 
+    // os_delay_us(2000*1000); 
 
-   update_state(STATE_CONNECT);                               // Connecting to ap and set sleep mode to no sleep
+    update_state(STATE_CONNECT);                               // Connecting to ap and set sleep mode to no sleep
 }
 
 LOCAL void event_cb(System_Event_t *event) {
@@ -62,7 +50,7 @@ LOCAL void event_cb(System_Event_t *event) {
         break;
     case EVENT_STAMODE_DISCONNECTED:
         os_printf("Event: EVENT_STAMODE_DISCONNECTED\n");
-        os_printf("Reason: %d\n", &event->event_info.disconnected.reason);
+        os_printf("Reason: %d\n", event->event_info.disconnected.reason);
         break;
     case EVENT_STAMODE_AUTHMODE_CHANGE:
         os_printf("Event: EVENT_STAMODE_AUTHMODE_CHANGE\n");
@@ -89,13 +77,10 @@ user_rf_pre_init(void)
 void ICACHE_FLASH_ATTR
 user_init(void)
 {
-    //uart_init(BIT_RATE_115200, BIT_RATE_115200);
     uart_div_modify(0, UART_CLK_FREQ / 115200);                     // Enable dev stream to uart 0 
     os_printf("\r\nUser init...\n"); 
 
     user_sta_init();                                                // ESP8266 station mode init.
-
-    //user_uart_init(); 
 
     PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0);            // SET GPIO function, not uart...
     PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_GPIO2);            // SET GPIO function, not uart...

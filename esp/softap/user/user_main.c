@@ -25,10 +25,10 @@ void ICACHE_FLASH_ATTR init_done_cb() {
     // Printing IP info
     //user_softap_ipinfo(); 
 
-
-    wifi_station_dhcpc_stop(); 
-    user_sta_setup_static_ip();
-    wifi_station_connect();
+    wifi_set_sleep_type(NONE_SLEEP_T);                          // Setting device to don't sleep when connected (pm open 0 0)
+    wifi_station_dhcpc_stop();                                  // Stop DHCP client to set static ip
+    user_sta_setup_static_ip();                                 // Setup static ip
+    wifi_station_connect();                                     // Connect to specific AP
 
     //os_printf("autoconnect: %d ", wifi_station_get_auto_connect());
 
@@ -66,8 +66,8 @@ void user_rf_pre_init(void)
 
 void user_init(void)
 {
-    //uart_init(BIT_RATE_115200, BIT_RATE_115200);
-    uart_div_modify(0, UART_CLK_FREQ / 115200);     // Enable dev stream to uart 0 
+    uart_init(BIT_RATE_115200, BIT_RATE_115200);
+    //uart_div_modify(0, UART_CLK_FREQ / 115200);     // Enable dev stream to uart 0 
     os_printf("\r\nUser SOFTAP init...\n"); 
 
 

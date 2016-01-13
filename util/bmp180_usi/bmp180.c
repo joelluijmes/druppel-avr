@@ -96,7 +96,7 @@ static void start_measure(uint8_t address)
 	if(twi_master_send(I2C_ADDR_BMP180, buffer, 2, CLOSE) != TWST_OK)
 		return; 
 
-	uint8_t max_conversion_time
+	uint8_t max_conversion_time;
 	switch(address)
 	{
 		case BMP180_ADDRESS_TEMPERATURE: 

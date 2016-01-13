@@ -2,11 +2,11 @@ CC = avr-gcc
 OBJCOPY = avr-objcopy
 DUDE = avrdude
 
-CCFLAGS = -Wall -O2 -mmcu=attiny85 -DF_CPU=800000UL -DBAUD=57600 -std=c99
+CCFLAGS = -Wall -O2 -mmcu=attiny85 -DF_CPU=800000UL -DBAUD=19200 -std=c99
 OBJCOPYFLAGS = -O ihex
 DUDEFLAGS = -pattiny85 -b 9600 -B12 -c usbasp -PCOM3 -v
 
-SOURCES = main.c ../../util/twi/twi.c ../../util/twi/usi/twi_usi.c ../../util/eeprom_usi/eeprom.c ../../util/ds1307_usi/ds1307.c ../../util/bmp180_usi/bmp180.c
+SOURCES = main.c ../../util/twi/twi.c ../../util/twi/usi/twi_usi.c ../../util/eeprom_usi/eeprom.c ../../util/ds1307_usi/ds1307.c communication.c
 COMPILED = firmware.hex
 LINKED = firmware.o
 OBJECTS = $(SOURCES:.c=.o)

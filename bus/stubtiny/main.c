@@ -4,7 +4,7 @@
 
 #include "../../util/twi/twi.h"
 
-#define SLAVE_ADDR 0x08
+#define SLAVE_ADDR 0x11
 
 typedef enum state state;
 enum state
@@ -50,6 +50,7 @@ int main()
 			state = send_data(data, len);
 			break;
 		case STATE_COMPLETED:
+			state = STATE_IDLE;
 			break;
 		case STATE_FAILED:
 			break;
@@ -67,7 +68,7 @@ static state receive_request()
 
 static uint8_t measure(uint8_t* data, uint8_t datalen)
 {
-	*((uint32_t*)data) = 0x00ABCDEF;
+	*((uint32_t*)data) = 0x12345678;
 	return 4;
 }
 
@@ -78,7 +79,7 @@ static state send_ready()
 		return STATE_FAILED;
 
 	uint8_t cmd;
-	return (twi_slave_receive_byte(SLAVE_ADDR, &cmd) && cmd == COMMAND_OK)
+	return (twi_slave_receive_byte(SLAVE_ADDR, &cmd) == TWST_OK && cmd == COMMAND_OK)
 		? STATE_SENDING
 		: STATE_FAILED;
 }

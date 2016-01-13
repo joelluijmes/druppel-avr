@@ -22,9 +22,9 @@
 #define CR_TICK (1 << USIWM1 | 1 << USICS1 | 1 << USICLK | 1 << USITC)
 
 // Atmel stuff (AVR310)
-#define TWI_FAST_MODE
+//#define TWI_FAST_MODE
 
-#define SYS_CLK   4000.0  // [kHz]
+#define SYS_CLK   14000.0  // [kHz]     12000 = 90khz, 14000 = 80 khz
 
 #ifdef TWI_FAST_MODE               // TWI FAST mode timing limits. SCL = 100-400kHz
 #define T2_TWI    ((SYS_CLK *1300) /1000000) +1 // >1,3us
@@ -128,10 +128,11 @@ TWRESULT usi_init_slave(uint8_t slave_addr)
 {
     _address = slave_addr;
     // Okay these need to be used :D
-    SDA_OUTPUT();
-    SCL_OUTPUT();
     SCL_HIGH();
     SDA_HIGH();
+	SDA_OUTPUT();
+    SCL_OUTPUT();
+    
     SDA_INPUT();
 
     USISR = SR_RESET;
@@ -162,8 +163,8 @@ TWRESULT usi_start_master(uint8_t slave_addr, uint8_t transmitting)
     // Data is the slave address and the bit if we are sending or receiving
     uint8_t data = (slave_addr << 1) | (transmitting ? 0x00 : 0x01);
     return usi_write_master(data)
-    ? TWST_OK                              // Didn't receive ack :(
-    : TWST_MASTER_NACK;
+		? TWST_OK                              // Didn't receive ack :(
+		: TWST_MASTER_NACK;
 }
 
 uint8_t usi_write_master(uint8_t data)
@@ -185,7 +186,7 @@ uint8_t usi_write_master(uint8_t data)
     USIDR = 0xFF;
     SDA_OUTPUT();
 
-    return tmp;
+    return !(tmp & 0x01);
 }
 
 uint8_t usi_write_slave(uint8_t data)
