@@ -128,10 +128,11 @@ TWRESULT usi_init_slave(uint8_t slave_addr)
 {
     _address = slave_addr;
     // Okay these need to be used :D
-    SDA_OUTPUT();
-    SCL_OUTPUT();
     SCL_HIGH();
     SDA_HIGH();
+	SDA_OUTPUT();
+    SCL_OUTPUT();
+    
     SDA_INPUT();
 
     USISR = SR_RESET;
