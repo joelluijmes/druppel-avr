@@ -3,7 +3,7 @@
 #define SENSORS_RECEIVE_BUFFER_SIZE 0x10
 
 #define SENSORS_ADDRESS_START 0x10
-#define SENSORS_ADDRESS_END 0x11
+#define SENSORS_ADDRESS_END 0x10
 #define SENSORS_ADDRESS_LEN (SENSORS_ADDRESS_END - SENSORS_ADDRESS_START + 1)
 
 #define DATA_HEADER_LEN  6
@@ -64,7 +64,7 @@ uint8_t sensor_fill(uint32_t time, uint8_t* data, uint8_t datalen)
 				{
 					data[offset] = address;								// Data format:
 					*((uint32_t*)(data + offset + 1)) = time;			// ID | TIME | DATA_LEN | DATA
-					data[offset + sizeof(uint32_t)] = len;
+					data[offset + sizeof(uint32_t) + 1] = len;
 
 					*p_state = STATE_COMPLETED;
 					offset += len + DATA_HEADER_LEN;
