@@ -9,9 +9,9 @@
 #include "communication.h"
 #include "sensors.h"
 
-#define EEPROM_END_ADDR 0x02
-#define EEPROM_BEGIN_ADDR 0x00
-#define EEPROM_DEFAULT_ADDR 10
+#define EEPROM_END_ADDR 0x08
+#define EEPROM_BEGIN_ADDR 0x04
+#define EEPROM_DEFAULT_ADDR 0x20
 
 #define BUF_LEN 64
 
@@ -35,9 +35,10 @@ static uint8_t flush_eeprom()
 	uint16_t endAddress = read_eeprom_uint16(EEPROM_END_ADDR);
 
 	uint8_t buf[BUF_LEN];
-	uint16_t currentAddress = beginAddess, left = endAddress - currentAddress;
-	while (left > 0)
+	uint16_t currentAddress = beginAddess;
+	while (currentAddress < endAddress)
 	{
+		uint16_t left = endAddress - currentAddress;
 		uint8_t len = (left < BUF_LEN) 
 			? left
 			: BUF_LEN;
@@ -63,6 +64,12 @@ static uint8_t flush_eeprom()
 
 int main()
 {
+	//write_eeprom_uint16(EEPROM_BEGIN_ADDR, EEPROM_DEFAULT_ADDR);
+	//_delay_ms(50);
+	//
+	//write_eeprom_uint16(EEPROM_END_ADDR, EEPROM_DEFAULT_ADDR);
+	//_delay_ms(50);
+	
 	uint16_t addr = read_eeprom_uint16(EEPROM_END_ADDR);
 	uint8_t data[BUF_LEN];
 	
@@ -79,6 +86,7 @@ int main()
 		write_eeprom_uint16(EEPROM_END_ADDR, addr);
 
 		_delay_ms(10);
+		//if (addr > 10)
 		if (communication_available())
 			flush_eeprom();
 	}
