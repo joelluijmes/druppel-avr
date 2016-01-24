@@ -23,7 +23,6 @@ enum command
 	COMMAND_OK
 };
 
-
 static state receive_request();
 static uint8_t measure(uint8_t* data, uint8_t datalen);
 static state send_ready();
@@ -39,6 +38,7 @@ int main()
 	{ 
 		switch (state)
 		{
+		case STATE_FAILED:	// start over when we fail
 		case STATE_IDLE:
 			state = receive_request();
 			break;
@@ -51,8 +51,6 @@ int main()
 			break;
 		case STATE_COMPLETED:
 			state = STATE_IDLE;
-			break;
-		case STATE_FAILED:
 			break;
 		}
 	}
@@ -68,7 +66,7 @@ static state receive_request()
 
 static uint8_t measure(uint8_t* data, uint8_t datalen)
 {
-	*((uint32_t*)data) = 0x12345678;
+	*((uint32_t*)data) = 0xDEADBEEF;
 	return 4;
 }
 

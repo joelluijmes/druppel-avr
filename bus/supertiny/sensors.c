@@ -2,8 +2,8 @@
 
 #define SENSORS_RECEIVE_BUFFER_SIZE 0x10
 
-#define SENSORS_ADDRESS_START 0x10
-#define SENSORS_ADDRESS_END 0x10
+#define SENSORS_ADDRESS_START 0x11
+#define SENSORS_ADDRESS_END 0x11
 #define SENSORS_ADDRESS_LEN (SENSORS_ADDRESS_END - SENSORS_ADDRESS_START + 1)
 
 #define DATA_HEADER_LEN  6
@@ -43,6 +43,7 @@ uint8_t sensor_fill(uint32_t time, uint8_t* data, uint8_t datalen)
 		completed = 1;
 		for (uint8_t address = SENSORS_ADDRESS_START; address <= SENSORS_ADDRESS_END; ++address)
 		{
+			_delay_ms(1);
 			state* p_state = _states + address - SENSORS_ADDRESS_START;	// The array starts at 0, the first address isn't gaurunteed to be at 0 tho
 																		// so for the correct array index we need to subtract the last address
 																		// (The addresses are sequential ;) )
