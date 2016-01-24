@@ -55,12 +55,14 @@ i2c_slave_init(void)
     IS_DEBUG(os_printf("I2C: init\n")); 
     PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0);            // SET GPIO function, not uart...
     PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_GPIO2);            // SET GPIO function, not uart...
+    PIN_FUNC_SELECT(PERIPHS_IO_MUX_U0RXD_U, FUNC_GPIO3);            // GPIO function, instead of U0RXD
 
-    // Setting I2C pins to input
-    gpio_output_set(0, 0, 0, GPIO_ID_PIN(SDA_PIN));
-    gpio_output_set(0, 0, 0, GPIO_ID_PIN(SCL_PIN));
+    gpio_output_set(0, 0, 0, GPIO_ID_PIN(SDA_PIN));                 // Configure SDA to input
+    gpio_output_set(0, 0, 0, GPIO_ID_PIN(SCL_PIN));                 // Configure SCL to input
 
-    user_i2c_debug();
+    GPIO_OUTPUT_SET(3, 1);                                          // Set gpio 3 to output high, so i2c bus can connect
+
+    //user_i2c_debug();
 
     i2c_update_status(I2C_READING_START);   
     
@@ -69,7 +71,7 @@ i2c_slave_init(void)
 
 void ICACHE_FLASH_ATTR 
 i2c_slave_stop(void)
-{ 
+{
     ETS_GPIO_INTR_DISABLE();                        // Disable Interrupts
     i2c_update_status(I2C_IDLE);                            // Disable interrupt on specific pin.  
 }
@@ -262,7 +264,8 @@ i2c_return_interrupt()
 void ICACHE_FLASH_ATTR
 print_debug_info(void *arg)
 {
-    if(clockpulses != 0) {
+    if(clockpulses != 0)
+    {
         os_printf("DEBUG, count: %d, clockpulses: %d\n", i2c_bit_number, clockpulses);
 
         os_printf("BUFFER: %d, %d, %d \n", i2c_byte_buffer[0], i2c_byte_buffer[1], i2c_byte_buffer[2]);
