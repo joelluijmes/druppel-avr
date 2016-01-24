@@ -25,7 +25,7 @@
 
 	#define SLAVE_INIT(slaveaddr) (usi_init_slave(slaveaddr))
 	#define SLAVE_WRITE(data) (usi_write_slave(data))
-	#define SLAVE_READ() (usi_read_slave())
+	#define SLAVE_READ(p_data) (usi_read_slave(p_data))
 	#define SLAVE_IS_STOP() (usi_is_stop())
 	#define SLAVE_AVAILABLE() (usi_available())
 #else
@@ -113,10 +113,8 @@ TWRESULT twi_slave_receive(uint8_t slaveaddr, uint8_t* buffer, uint8_t* len)
 	uint8_t i;
 	for (i = 0; i < *len; ++i)
 	{
-		buffer[i] = SLAVE_READ();
-
-		if (SLAVE_IS_STOP())
-			break;		
+		if (SLAVE_READ(&buffer[i]) != TWST_OK)
+			break;	
 	}
 
 	if (*len != i)												// were cut off by master (NACK)
