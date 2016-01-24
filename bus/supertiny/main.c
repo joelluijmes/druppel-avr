@@ -6,30 +6,88 @@
 #include "../../util/twi/twi.h"
 #include "../../util/eeprom_usi/eeprom.h"
 
+#include "communication.h"
 #include "sensors.h"
 
-#define EEPROM_ADDR_LAST_ACCESSED 0
-static uint16_t read_addr()
+#define EEPROM_END_ADDR 0x08
+#define EEPROM_BEGIN_ADDR 0x04
+#define EEPROM_DEFAULT_ADDR 0x20
+
+#define BUF_LEN 64
+
+static uint16_t read_eeprom_uint16(uint8_t address)
 {
 	uint8_t buf[2];
-	eeprom_read(EEPROM_ADDR_LAST_ACCESSED, buf, 2);
-
-	return buf[0] << 8 | buf[1];
+	return (eeprom_read(address, buf, 2))
+		?  buf[0] << 8 | buf[1]
+		: -1;
 }
+
+static uint8_t write_eeprom_uint16(uint8_t address, uint16_t data)
+{
+	uint8_t buf[2] = { data >> 8, data };
+	return eeprom_write(address, buf, 2);
+}
+
+static uint8_t flush_eeprom()
+{
+	uint16_t beginAddess = read_eeprom_uint16(EEPROM_BEGIN_ADDR);
+	uint16_t endAddress = read_eeprom_uint16(EEPROM_END_ADDR);
+
+	uint8_t buf[BUF_LEN];
+	uint16_t currentAddress = beginAddess;
+	while (currentAddress < endAddress)
+	{
+		uint16_t left = endAddress - currentAddress;
+		uint8_t len = (left < BUF_LEN) 
+			? left
+			: BUF_LEN;
+
+		if (!eeprom_read(currentAddress, buf, len))
+			return 0;
+
+		if (!communication_available())
+			return 0;
+
+		if (!communication_send(buf, len))
+			return 0;
+
+		currentAddress += len;
+		write_eeprom_uint16(EEPROM_BEGIN_ADDR, currentAddress);
+		_delay_ms(5);
+	}
+
+	return 1;
+}
+
+
 
 int main()
 {
-	uint8_t data[64];
-	uint16_t addr = read_addr();
-
+	//write_eeprom_uint16(EEPROM_BEGIN_ADDR, EEPROM_DEFAULT_ADDR);
+	//_delay_ms(50);
+	//
+	//write_eeprom_uint16(EEPROM_END_ADDR, EEPROM_DEFAULT_ADDR);
+	//_delay_ms(50);
+	
+	uint16_t addr = read_eeprom_uint16(EEPROM_END_ADDR);
+	uint8_t data[BUF_LEN];
+	
 	while (1)
 	{
+		communication_available();											// trigger communication (to get active i.e.)
 		uint32_t unixtime = read_unix_time();
-		uint8_t len = sensor_fill(unixtime, data, 64);
+		uint8_t len = sensor_fill(unixtime, data, BUF_LEN);
 
 		eeprom_write(addr, data, len);
+		_delay_ms(5);
+
 		addr += len;
-		// if (communcation_active())
-		// 	communication_send(data, len);
+		write_eeprom_uint16(EEPROM_END_ADDR, addr);
+
+		_delay_ms(10);
+		//if (addr > 10)
+		if (communication_available())
+			flush_eeprom();
 	}
 }

@@ -3,8 +3,9 @@
 #include <avr/interrupt.h>
 
 #include "../../util/twi/twi.h"
+#include "../../util/sht15/sht.h"
 
-#define SLAVE_ADDR 0x11
+#define SLAVE_ADDR 0x16
 
 typedef enum state state;
 enum state
@@ -23,13 +24,41 @@ enum command
 	COMMAND_OK
 };
 
+
 static state receive_request();
 static uint8_t measure(uint8_t* data, uint8_t datalen);
 static state send_ready();
 static state send_data(uint8_t* data, uint8_t datalen);
 
+static sht* _sht;
+
 int main()
 {
+	pin sck =
+	{
+		.ddr = &DDRB,
+		.out = &PORTB,
+		.in = &PINB,
+		.mask = 1 << 4
+	};
+	pin pinData =
+	{
+		.ddr = &DDRB,
+		.out = &PORTB,
+		.in = &PINB,
+		.mask = 1 << 3
+	};
+
+	sht sht =
+	{
+		.pinSCK = sck,
+		.pinDATA = pinData
+	};
+	_sht = &sht;
+
+	pin_output(&sck);
+	pin_output(&pinData);
+
 	volatile state state = STATE_IDLE;
 	uint8_t data[16];
 	uint8_t len = 0;
@@ -38,7 +67,6 @@ int main()
 	{ 
 		switch (state)
 		{
-		case STATE_FAILED:	// start over when we fail
 		case STATE_IDLE:
 			state = receive_request();
 			break;
@@ -51,6 +79,8 @@ int main()
 			break;
 		case STATE_COMPLETED:
 			state = STATE_IDLE;
+			break;
+		case STATE_FAILED:
 			break;
 		}
 	}
@@ -66,8 +96,9 @@ static state receive_request()
 
 static uint8_t measure(uint8_t* data, uint8_t datalen)
 {
-	*((uint32_t*)data) = 0xDEADBEEF;
-	return 4;
+	double tmp = sht_readTemperature(_sht);
+	*((double*)data) = tmp;
+	return sizeof(double);
 }
 
 static state send_ready()

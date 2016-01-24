@@ -1,8 +1,4 @@
-#include <avr/io.h>
-#include <util/delay.h>
-#include <math.h>
 #include "bmp180.h"
-#include "../twi/twi.h"
 
 #define I2C_ADDR_BMP180 0x77
 #define	BMP180_ADDRESS_TEMPERATURE 0x2E				// Calculate temperature (single sample)

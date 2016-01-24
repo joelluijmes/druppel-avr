@@ -22,9 +22,9 @@
 #define CR_TICK (1 << USIWM1 | 1 << USICS1 | 1 << USICLK | 1 << USITC)
 
 // Atmel stuff (AVR310)
-//#define TWI_FAST_MODE
+#define TWI_FAST_MODE
 
-#define SYS_CLK   14000.0  // [kHz]     12000 = 90khz, 14000 = 80 khz
+#define SYS_CLK   4000.0  // [kHz]     12000 = 90khz, 14000 = 80 khz
 
 #ifdef TWI_FAST_MODE               // TWI FAST mode timing limits. SCL = 100-400kHz
 #define T2_TWI    ((SYS_CLK *1300) /1000000) +1 // >1,3us
@@ -51,7 +51,7 @@
 #define SET_USI_TO_TWI_START_CONDITION_MODE()                                                          \
 {                                                                                                      \
     USICR = (1 << USISIE | 1 << USIWM1 | 1 << USICS1);      /* Start Interrupt | TWI Mode | Ext Clk */ \
-    USISR = (1 << USIOIF | 1 << USIPF | 1 << USIDC);        /* Clear flags, except start condition */  \
+    USISR = SR_RESET;														        /* Clear flags */  \
 }
 
 #define SET_USI_TO_SEND_DATA()                                                                         \
@@ -90,39 +90,20 @@
     USISR = SR_SHIFT8;                          /* Count one bit (2 edges) */                          \
     WAIT_TRANSFER();                                                                                   \
 }
-
-#define SLAVE_WAIT() do { } while ((USISR & (1 << USIOIF)) == 0)
+																									   
+static inline TWRESULT slave_wait()																				   
+{																									   
+	while ((USISR & (1 << USIOIF | 1 << USIPF)) == 0)
+		;
+	return (USISR & (1 << USIPF)) 
+		? TWST_SL_STOP 
+		: TWST_OK;												   
+}
 
 static uint8_t _address;
 static void start_condition();
 static void usi_init_master();
-
-TWRESULT usi_wait()
-{
-    do
-    {
-        SET_USI_TO_TWI_START_CONDITION_MODE();              // Reset to receive start condition
-        while ((USISR & (1 << USISIF)) == 0) ;              // Wait for USI to detect the start condition
-        SDA_INPUT();                                        // Data as input -> to receive slave address
-
-        while (IS_SCL_HIGH() && !(IS_SDA_HIGH())) ;            // Be sure start condition was completed
-
-        USICR = (IS_SDA_HIGH())                             // Check if we received start of stop condition
-        ? 1 << USISIE | 1 << USIWM1 | 1 << USIWM0 | 1 << USICS1                 // stop condition
-        : 1 << USISIE | 1 << USIOIE | 1 << USIWM1 | 1 << USIWM0 | 1 << USICS1;  // start condition
-
-        USISR = SR_RESET;                                   // Reset flags
-
-        SLAVE_WAIT();                                       // Wait for completion
-    } while (USIDR != 0 && (USIDR >> 1) != _address);       // Repeat as long we are not addressed by the master
-
-    TWRESULT result = (USIDR & 0x01)                       // Check if we are transmitting or receiving slave
-        ? TWST_SL_TRANSMITTING
-        : TWST_SL_RECEIVING;
-
-    SET_USI_TO_SEND_ACK();                                  // Send the acknowledge
-    return result;
-}
+static uint8_t wait_slave_start();
 
 TWRESULT usi_init_slave(uint8_t slave_addr)
 {
@@ -136,7 +117,23 @@ TWRESULT usi_init_slave(uint8_t slave_addr)
     SDA_INPUT();
 
     USISR = SR_RESET;
-    return usi_wait();
+    do
+    {
+	    if (!wait_slave_start())						// we received a start or stop -> dont check the address
+			continue;									// (wouldn't be a valid address)
+    }													// Repeat as long we are not addressed by the master
+#ifdef I2C_ALL_ADDR 
+	while (USIDR != 0 && (USIDR >> 1) != _address);   
+#else
+	while ((USIDR >> 1) != _address);   
+#endif
+
+    TWRESULT result = (USIDR & 0x01)					// Check if we are transmitting or receiving slave
+		? TWST_SL_TRANSMITTING
+		: TWST_SL_RECEIVING;
+
+    SET_USI_TO_SEND_ACK();                              // Send the acknowledge
+	return result;
 }
 
 static void usi_init_master()
@@ -163,7 +160,7 @@ TWRESULT usi_start_master(uint8_t slave_addr, uint8_t transmitting)
     // Data is the slave address and the bit if we are sending or receiving
     uint8_t data = (slave_addr << 1) | (transmitting ? 0x00 : 0x01);
     return usi_write_master(data)
-		? TWST_OK                              // Didn't receive ack :(
+		? TWST_OK										// Didn't receive ack :(
 		: TWST_MASTER_NACK;
 }
 
@@ -191,16 +188,16 @@ uint8_t usi_write_master(uint8_t data)
 
 uint8_t usi_write_slave(uint8_t data)
 {
-    SLAVE_WAIT();                                       // Wait for bus to be ready
+    slave_wait();                                       // Wait for bus to be ready
     USIDR = data;                                       // Sets data
 
     SET_USI_TO_SEND_DATA();                             // Issues USI to send data
     
-    SLAVE_WAIT();                                       // Wait again..
+    slave_wait();                                       // Wait again..
     SET_USI_TO_READ_ACK();                              // Issues USI to read the ack
 
-    SLAVE_WAIT();
-    return !(USIDR & 0x01);                                      // Returns ACK received
+    slave_wait();
+    return !(USIDR & 0x01);								// Returns ACK received
 }
 
 uint8_t usi_read_master(uint8_t nack)
@@ -216,16 +213,21 @@ uint8_t usi_read_master(uint8_t nack)
     return data;
 }
 
-uint8_t usi_read_slave()
-{
-    SLAVE_WAIT();                                       // Wait to be come ready
-    SET_USI_TO_READ_DATA();                             // Sets usi to start reading
+TWRESULT usi_read_slave(uint8_t* data)
+{	
+    volatile TWRESULT res = slave_wait();               // Wait to be come ready
+	if (res != TWST_OK)
+		return res;
 
-    SLAVE_WAIT();                                       // Wait for read to complete
-    uint8_t data = USIDR;                               // Temporary hold data
+    SET_USI_TO_READ_DATA();                             // Sets usi to start reading
+    res = slave_wait();                                 // Wait for read to complete
+	if (res != TWST_OK)
+		return res;
+
+    *data = USIDR;										// Temporary hold data
     SET_USI_TO_SEND_ACK();                              // Send ACK
 
-    return data;                                        // Returns the data
+    return TWST_OK;                                     // Returns the data
 }
 
 TWRESULT usi_stop()
@@ -239,8 +241,8 @@ TWRESULT usi_stop()
     while (!IS_SDA_HIGH()) ;
 
     return (USISR & (1 << USIPF))
-    ? TWST_OK
-    : TWST_STOP_FAILED;                             // Returns true if stop succeeded
+		? TWST_OK
+		: TWST_STOP_FAILED;                             // Returns true if stop succeeded
 }
 
 static void start_condition()
@@ -259,5 +261,26 @@ static void start_condition()
     SDA_LOW();                                          // Data low
     _delay_us(T4_TWI/4);                                // Wait falling
     SCL_LOW();                                          // Clock low
-    //SDA_HIGH();                                         // Data high
+}
+
+static uint8_t wait_slave_start()
+{
+	SET_USI_TO_TWI_START_CONDITION_MODE();              // Reset to receive start condition
+	while ((USISR & (1 << USISIF)) == 0) ;              // Wait for USI to detect the start condition
+	SDA_INPUT();                                        // Data as input -> to receive slave address
+
+	while (IS_SCL_HIGH() && !(IS_SDA_HIGH())) ;         // Be sure start condition was completed
+
+	USICR = (IS_SDA_HIGH())                             // Check if we received start of stop condition
+		? 1 << USISIE | 1 << USIWM1 | 1 << USIWM0 | 1 << USICS1                 // stop condition
+		: 1 << USISIE | 1 << USIOIE | 1 << USIWM1 | 1 << USIWM0 | 1 << USICS1;  // start condition
+
+	USISR = SR_RESET;                                   // Reset flags
+	while ((USISR & (1 << USIOIF)) == 0)				// wait for transfer 8 bits (address)
+	{
+		if (USISR & (1 << USISIF | 1 << USIPF))			// we don't expect a start or stop here!?
+			return 0;
+	}
+
+	return 1;
 }
