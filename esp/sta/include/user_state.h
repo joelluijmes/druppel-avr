@@ -11,7 +11,8 @@ enum state
     STATE_DISCONNECT = 2,
     STATE_CONNECTED = 3, 
     STATE_DISCONNECTED = 4,
-    STATE_BUSY = 5
+    STATE_BUSY = 5,
+    STATE_TEST_CONN = 6
 };
 typedef enum state state;
 
