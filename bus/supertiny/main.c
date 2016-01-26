@@ -106,6 +106,8 @@ int main()
 		if (!communication_available())
 			continue;
 
+		_delay_us(500); 
+
 		if (!communication_send(buf, len))
 			continue;
 	}
