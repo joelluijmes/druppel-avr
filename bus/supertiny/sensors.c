@@ -35,11 +35,16 @@ static int8_t read_sensor(uint8_t slave_address, uint8_t* buf, uint8_t len);
 uint8_t sensor_fill(uint8_t* data, uint8_t datalen)
 {
 	state _states[SENSORS_ADDRESS_LEN] = {0};
-	uint8_t offset = 0;
 
-	uint8_t completed = 0;												// 'dirty' flag, will be cleared by every sensor if their state has changed
+	uint8_t completed = 0, offset = 0;									// 'dirty' flag, will be cleared by every sensor if their state has changed
+	time_swreset();													
 	while (!completed)													// if not it indicates we checked all sensors
 	{
+		#if SENSOR_TIMEOUT > 0
+		if (time_swelapsed() > SENSOR_TIMEOUT)	
+			return offset;												// sensor stopped responding
+		#endif
+
 		completed = 1;
 		for (uint8_t address = SENSORS_ADDRESS_START; address <= SENSORS_ADDRESS_END; ++address)
 		{
@@ -63,7 +68,7 @@ uint8_t sensor_fill(uint8_t* data, uint8_t datalen)
 				if (len > 0)											// completed with this sensor :D
 				{
 					data[offset] = address;								// Data format:
-					//*((uint32_t*)(data + offset + 1)) = time;			// ID | TIME | DATA_LEN | DATA
+					*((uint32_t*)(data + offset + 1)) = time_swstart(); // ID | TIME | DATA_LEN | DATA
 					data[offset + sizeof(uint32_t) + 1] = len;
 
 					*p_state = STATE_COMPLETED;

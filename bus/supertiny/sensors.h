@@ -3,6 +3,7 @@
 #include <avr/io.h>
 #include <util/delay.h>
 
+#include "time.h"
 #include "../../util/wdt.h"
 #include "../../util/twi/twi.h"
 
