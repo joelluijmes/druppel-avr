@@ -11,54 +11,65 @@ enum state
 };
 
 static uint8_t _addresses[I2C_ADDRLEN];
-static measure_t _measure;
+static measure_t _measure[I2C_ADDRLEN];
 
+static state handle_device(uint8_t slave_addr, measure_t measure, uint8_t* data, uint8_t datalen, uint8_t* len);
 static state receive_request(uint8_t slave_addr);
 static state send_ready(uint8_t slave_addr);
 static state send_data(uint8_t slave_addr, uint8_t* data, uint8_t datalen);
 
-#if I2C_ADDRLEN > 1
-void idp_init(uint8_t* addresses, measure_t measure)
-{
-	memcpy(_addresses, addresses, I2C_ADDRLEN);
+#if (I2C_ADDRLEN > 1)
+	void idp_init(uint8_t* addresses, measure_t* measure)
+	{
+		for (uint8_t i = 0; i < I2C_ADDRLEN; ++i)
+		{
+			_addresses[i] = addresses[i];
+			_measure[i] = measure[i];
+		}
+	}
 #else
-void idp_init(uint8_t slave_addr, measure_t measure)
-{
-	_addresses[0] = slave_addr;
+	void idp_init(uint8_t slave_addr, measure_t measure)
+	{
+		_addresses[0] = slave_addr;
+		_measure[0] = measure;
+	}
 #endif
-	
-	_measure = measure;
-}
 
 void idp_process(uint8_t* data, uint8_t data_len)
 {
-	volatile state states[I2C_ADDRLEN] = {0};
 	uint8_t len = 0;
-	
-	next_address:
-	for (volatile uint8_t i = 0; i < I2C_ADDRLEN; ++i)
-	{
-		while (1)
-		{
-			volatile uint8_t slave_addr = _addresses[i];
-			volatile state* p_state = states + i;
 
-			switch (*p_state)
-			{
-			case STATE_FAILED:	
-			case STATE_COMPLETED:
-				goto next_address;		
-			case STATE_IDLE:
-				*p_state = receive_request(slave_addr);
-				break;
-			case STATE_MEASURING:
-				len = _measure(data, data_len);
-				*p_state = send_ready(slave_addr);
-				break;
-			case STATE_SENDING:
-				*p_state = send_data(slave_addr, data, len);
-				break;
-			}
+	for (uint8_t i = 0; i < I2C_ADDRLEN; ++i)
+	{
+		uint8_t l = 0;
+		handle_device(_addresses[i], _measure[i], data + len, data_len - len, &l);
+
+		len += l;
+	}
+}
+
+static state handle_device(uint8_t slave_addr, measure_t measure, uint8_t* data, uint8_t datalen, uint8_t* len)
+{
+	state _state = STATE_IDLE;
+	while (1)
+	{
+		switch (_state)
+		{
+		case STATE_FAILED:
+		case STATE_COMPLETED:
+			return _state;
+		case STATE_IDLE:
+			_state = receive_request(slave_addr);
+			break;
+		case STATE_MEASURING:
+		{
+			*len = measure(data, datalen);
+			_state = send_ready(slave_addr);
+			break;
+		}
+		case STATE_SENDING:
+			_state = send_data(slave_addr, data, *len);
+			break;
 		}
 	}
 }
