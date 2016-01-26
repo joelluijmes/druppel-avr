@@ -1,10 +1,9 @@
 #ifndef __USER_TCPCLIENT_H__
 #define __USER_TCPCLIENT_H__
 
-//#define SERVER_IP 
 #define SERVER_IP {192, 168, 4, 1}
 #define SERVER_PORT 80
-#define packet_size (2 * 1024)
+//#define packet_size (2 * 1024)
 
 #include "user_state.h"
 #include "user_interface.h"
