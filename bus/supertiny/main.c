@@ -2,12 +2,13 @@
 #include <util/delay.h>
 #include <avr/interrupt.h>
 
-#include "../../util/ds1307_usi/ds1307.h"
+#include "../../util/wdt.h"
 #include "../../util/twi/twi.h"
 #include "../../util/eeprom_usi/eeprom.h"
 
 #include "communication.h"
 #include "sensors.h"
+#include "time.h"
 
 #define EEPROM_END_ADDR 0x08
 #define EEPROM_BEGIN_ADDR 0x04
@@ -38,6 +39,7 @@ static uint8_t flush_eeprom()
 	uint16_t currentAddress = beginAddess;
 	while (currentAddress < endAddress)
 	{
+		_wdt_reset();
 		uint16_t left = endAddress - currentAddress;
 		uint8_t len = (left < BUF_LEN) 
 			? left
@@ -60,10 +62,9 @@ static uint8_t flush_eeprom()
 	return 1;
 }
 
-
-
 int main()
 {
+	_wdt_enable(WDTO_30MS);
 	//write_eeprom_uint16(EEPROM_BEGIN_ADDR, EEPROM_DEFAULT_ADDR);
 	//_delay_ms(50);
 	//
@@ -72,20 +73,21 @@ int main()
 	
 	uint16_t addr = read_eeprom_uint16(EEPROM_END_ADDR);
 	uint8_t data[BUF_LEN];
-	
+
 	while (1)
 	{
 		communication_available();											// trigger communication (to get active i.e.)
-		uint32_t unixtime = read_unix_time();
-		uint8_t len = sensor_fill(unixtime, data, BUF_LEN);
+		uint8_t len = sensor_fill(data, BUF_LEN);
 
 		eeprom_write(addr, data, len);
 		_delay_ms(5);
+		_wdt_reset();														// reset after delay -> dont keep the watchdog waiting
 
 		addr += len;
 		write_eeprom_uint16(EEPROM_END_ADDR, addr);
 
 		_delay_ms(10);
+		_wdt_reset();
 		//if (addr > 10)
 		if (communication_available())
 			flush_eeprom();

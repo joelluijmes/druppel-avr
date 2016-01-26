@@ -32,7 +32,7 @@ static state request_measurement(uint8_t slave_address);
 static state sensor_ready(uint8_t slave_address);
 static int8_t read_sensor(uint8_t slave_address, uint8_t* buf, uint8_t len);
 
-uint8_t sensor_fill(uint32_t time, uint8_t* data, uint8_t datalen)
+uint8_t sensor_fill(uint8_t* data, uint8_t datalen)
 {
 	state _states[SENSORS_ADDRESS_LEN] = {0};
 	uint8_t offset = 0;
@@ -43,7 +43,6 @@ uint8_t sensor_fill(uint32_t time, uint8_t* data, uint8_t datalen)
 		completed = 1;
 		for (uint8_t address = SENSORS_ADDRESS_START; address <= SENSORS_ADDRESS_END; ++address)
 		{
-			_delay_ms(1);
 			state* p_state = _states + address - SENSORS_ADDRESS_START;	// The array starts at 0, the first address isn't gaurunteed to be at 0 tho
 																		// so for the correct array index we need to subtract the last address
 																		// (The addresses are sequential ;) )
@@ -64,7 +63,7 @@ uint8_t sensor_fill(uint32_t time, uint8_t* data, uint8_t datalen)
 				if (len > 0)											// completed with this sensor :D
 				{
 					data[offset] = address;								// Data format:
-					*((uint32_t*)(data + offset + 1)) = time;			// ID | TIME | DATA_LEN | DATA
+					//*((uint32_t*)(data + offset + 1)) = time;			// ID | TIME | DATA_LEN | DATA
 					data[offset + sizeof(uint32_t) + 1] = len;
 
 					*p_state = STATE_COMPLETED;
@@ -82,6 +81,8 @@ uint8_t sensor_fill(uint32_t time, uint8_t* data, uint8_t datalen)
 				break;
 			}
 
+			_delay_ms(5);												// wait between devices 
+			_wdt_reset();
 			completed = 0;												// Something has changed
 		}
 	}
