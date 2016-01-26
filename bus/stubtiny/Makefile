@@ -21,6 +21,9 @@ flash: $(COMPILED)
 disassemble: $(LINKED)
 	$(OBJDUMP) $(OBJDUMPFLAGS) $(LINKED)
 
+preprocessor: $(SOURCES)
+	$(CC) $(CCFLAGS) -E -nostdinc $(SOURCES) 
+
 clean:
 	$(RM) $(COMPILED) $(LINKED) $(OBJECTS)
 

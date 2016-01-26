@@ -36,8 +36,8 @@
 
 #define SET_USI_TO_SEND_ACK()                                                                          \
 {                                                                                                      \
-    SDA_OUTPUT();                                                       /* Set SDA as output */        \
     USIDR = 0;                                                          /* Prepare ACK */              \
+    SDA_OUTPUT();                                                       /* Set SDA as output */        \
     USISR = (1 << USIOIF | 1 << USIPF | 1 << USIDC | 0x0E << USICNT0);  /* Clear flags | count 1 bit*/ \
 }
 
