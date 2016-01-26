@@ -14,10 +14,7 @@
     • 3 – Software watch dog timer – Software watchdog reset
     • 4 – Soft restart
     • 5 – Deep sleep wake up
-*/
-    // DS1307 rtc
 
-/*
 2. uart debug info. output:
 Usually,for iot project , UART0 can output the debug information. But in AT mode , UART0 communicates with the PC or MCU, so the debug info. should be output via UART1.
 (1).SET UART1 PIN FUNC:
@@ -37,7 +34,6 @@ os_install_putc1((void *)uart1_write_char);
 
 static void ICACHE_FLASH_ATTR 
 init_done_cb() {
-    // Wifi connect to ap
     // os_delay_us(2000*1000); 
 
     update_state(STATE_CONNECT);                               // Connecting to ap and set sleep mode to no sleep
@@ -78,7 +74,7 @@ void ICACHE_FLASH_ATTR
 user_init(void)
 {
     uart_div_modify(0, UART_CLK_FREQ / 115200);                     // Enable dev stream to uart 0 
-    os_printf("\r\nUser init...\n"); 
+    DEBUG_0(os_printf("\r\nUser init...\n")); 
 
     user_sta_init();                                                // ESP8266 station mode init.
 
@@ -88,5 +84,5 @@ user_init(void)
 
     system_init_done_cb(init_done_cb);
     wifi_set_event_handler_cb(event_cb);
-    os_printf("User init done...\n\n");
+    DEBUG_0(os_printf("User init done...\n\n"));
 }
