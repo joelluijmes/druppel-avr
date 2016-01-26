@@ -74,7 +74,7 @@ int main()
 	uint16_t addr = read_eeprom_uint16(EEPROM_END_ADDR);
 	uint8_t data[BUF_LEN];
 
-	while (1)
+	while (0 && 1)
 	{
 		communication_available();											// trigger communication (to get active i.e.)
 		uint8_t len = sensor_fill(data, BUF_LEN);
@@ -91,5 +91,22 @@ int main()
 		//if (addr > 10)
 		if (communication_available())
 			flush_eeprom();
+	}
+
+
+	uint8_t buf[64];
+	uint8_t len = 64; 
+	for(uint8_t i = 0; i < len; i++)
+		buf[i] = i; 
+	while(1)
+	{
+		_wdt_reset();
+		//_delay_us(150); 
+		_delay_ms(5); 
+		if (!communication_available())
+			continue;
+
+		if (!communication_send(buf, len))
+			continue;
 	}
 }

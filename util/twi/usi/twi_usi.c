@@ -24,7 +24,7 @@
 // Atmel stuff (AVR310)
 #define TWI_FAST_MODE
 
-#define SYS_CLK   4000.0  // [kHz]     12000 = 90khz, 14000 = 80 khz
+#define SYS_CLK   6000.0  // [kHz]     4000 = 120khz, 6000 = 90khz
 
 #ifdef TWI_FAST_MODE               // TWI FAST mode timing limits. SCL = 100-400kHz
 #define T2_TWI    ((SYS_CLK *1300) /1000000) +1 // >1,3us

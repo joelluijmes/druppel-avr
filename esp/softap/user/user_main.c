@@ -33,6 +33,7 @@ void ICACHE_FLASH_ATTR init_done_cb() {
     //os_printf("autoconnect: %d ", wifi_station_get_auto_connect());
 
     //os_delay_us(2000*1000);
+
 }
 
 LOCAL void event_cb(System_Event_t *event) {

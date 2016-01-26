@@ -22,13 +22,11 @@
 #define I2C_READ_PIN(pin) (PIN_IN & ( 1  << pin ))
 #define I2C_SDA_SET(value) ((value > 0) ? (PIN_OUT_SET = 1 << SDA_PIN) : (PIN_OUT_CLEAR = 1 << SDA_PIN))
 
-
-uint8_t i2c_byte_buffer[70]; 
-int8_t  i2c_byte_number; 
+uint8_t    i2c_byte_buffer[65]; 
 volatile uint8_t    i2c_buffer; 
-volatile int8_t     i2c_bit_number;
-volatile int8_t     clockpulses;
-
+volatile int8_t     i2c_bit_number;  
+int8_t    i2c_byte_number; 
+volatile int8_t     clockpulses;        // Debug
 static volatile os_timer_t timer1;
 static uint8_t i2c_status;
 
@@ -85,6 +83,9 @@ i2c_update_status(uint8_t status)
     gpio_pin_intr_state_set(SDA_PIN, 0); 
     gpio_pin_intr_state_set(SCL_PIN, 0); 
 
+
+    i2c_status = status;
+
     switch(status) 
     {
         case I2C_IDLE: 
@@ -113,7 +114,6 @@ i2c_update_status(uint8_t status)
             i2c_bit_number = 8; // One for disable ack 
             break;
     }
-    i2c_status = status;
 }
 
 static void
@@ -125,7 +125,7 @@ i2c_slave_reading_address() {
 
     if(i2c_bit_number > 0) {
         i2c_buffer |= READ_PIN(SDA_PIN) << i2c_bit_number;
-        i2c_bit_number--;
+        i2c_bit_number--; 
 
     } else if(i2c_bit_number == 0) {
         i2c_buffer |= READ_PIN(SDA_PIN) << i2c_bit_number;
@@ -234,7 +234,7 @@ i2c_return_interrupt()
     ETS_GPIO_INTR_ENABLE();                                                 // Enable gpio interrupts
 }
 
-static void ICACHE_FLASH_ATTR
+void ICACHE_FLASH_ATTR
 print_debug_info(void *arg)
 {
     if(clockpulses != 0)
