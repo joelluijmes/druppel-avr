@@ -18,14 +18,14 @@
 #include "user_global_definitions.h"
 
 
-static bool DISCONNECT_AFTER_SENT;                                      // Close tcp connection after send callback
-static state tcp_state;                                                 // TCP connection state
-
 static struct espconn esp_conn;                                         // Holding the tcp connection
 static esp_tcp esptcp;
+
+static bool DISCONNECT_AFTER_SENT;                                      // Close tcp connection after send callback
+static state tcp_state;                                                 // TCP connection state
+static volatile os_timer_t wdtimer;
 static uint8_t esp_conn_wd_state; 
 
-static volatile os_timer_t wdtimer;
 
 static void tcpclient_recv_cb(void *arg, char *data, unsigned short length);
 static void tcpclient_sent_cb(void *arg);
@@ -33,7 +33,7 @@ static void tcpclient_discon_cb(void *arg);
 static void tcpclient_connect_cb(void *arg);
 static void tcpclient_wd_timer(void);
 
-state ICACHE_FLASH_ATTR
+state
 tcpclient_get_state()
 {
     return tcp_state;
@@ -42,9 +42,6 @@ tcpclient_get_state()
 void ICACHE_FLASH_ATTR
 tcpclient_update_state(state state)
 {
-    //if(tcp_state == state)                                              // Do nothing if state is the same
-    //    return;
-
     switch(state)
     {
     case STATE_IDLE:

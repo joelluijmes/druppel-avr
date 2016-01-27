@@ -94,4 +94,23 @@ int main()
 		if (communication_available())
 			flush_eeprom();
 	}
+
+
+	uint8_t buf[64];
+	uint8_t len = 64; 
+	for(uint8_t i = 0; i < len; i++)
+		buf[i] = i; 
+	while(1)
+	{
+		_wdt_reset();
+		//_delay_us(150); 
+		_delay_ms(5); 
+		if (!communication_available())
+			continue;
+
+		_delay_us(500); 
+
+		if (!communication_send(buf, len))
+			continue;
+	}
 }

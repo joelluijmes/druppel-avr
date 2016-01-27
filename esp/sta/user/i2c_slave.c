@@ -18,24 +18,23 @@
 #include "user_state.h"
 #include "user_tcpclient.h"
 
-static volatile os_timer_t timer1;
+#define READ_PIN(pin) (!!(PIN_IN & ( 1  << pin )))    // outputs 0 or 1
+#define I2C_READ_PIN(pin) (PIN_IN & ( 1  << pin ))
+#define I2C_SDA_SET(value) ((value > 0) ? (PIN_OUT_SET = 1 << SDA_PIN) : (PIN_OUT_CLEAR = 1 << SDA_PIN))
 
 uint8_t    i2c_byte_buffer[65]; 
 volatile uint8_t    i2c_buffer; 
 volatile int8_t     i2c_bit_number;  
 int8_t    i2c_byte_number; 
 volatile int8_t     clockpulses;        // Debug
-
-#define READ_PIN(pin) (!!(PIN_IN & ( 1  << pin )))    // outputs 0 or 1
-#define I2C_READ_PIN(pin) (PIN_IN & ( 1  << pin ))
-#define I2C_SDA_SET(value) ((value > 0) ? (PIN_OUT_SET = 1 << SDA_PIN) : (PIN_OUT_CLEAR = 1 << SDA_PIN))
+static volatile os_timer_t timer1;
+static uint8_t i2c_status;
 
 static void i2c_slave_reading_start();
 static void i2c_slave_reading_address();
 static void i2c_slave_writing_address();
 static void i2c_return_interrupt(); 
-
-static uint8_t i2c_status;
+static void user_i2c_debug(void);
 
 void ICACHE_FLASH_ATTR 
 i2c_slave_init(void)
@@ -289,7 +288,7 @@ i2c_slave_reading_start() {
     i2c_return_interrupt();
 }
 
-void ICACHE_FLASH_ATTR 
+static void ICACHE_FLASH_ATTR 
 user_i2c_debug(void)
 {
     //Disarm timer

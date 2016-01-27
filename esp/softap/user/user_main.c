@@ -33,6 +33,7 @@ void ICACHE_FLASH_ATTR init_done_cb() {
     //os_printf("autoconnect: %d ", wifi_station_get_auto_connect());
 
     //os_delay_us(2000*1000);
+
 }
 
 LOCAL void event_cb(System_Event_t *event) {
@@ -66,7 +67,7 @@ void user_rf_pre_init(void)
 
 void user_init(void)
 {
-    uart_init(BIT_RATE_115200, BIT_RATE_115200);
+    uart_init(BIT_RATE_57600, BIT_RATE_57600);         //BIT_RATE_115200
     //uart_div_modify(0, UART_CLK_FREQ / 115200);     // Enable dev stream to uart 0 
     os_printf("\r\nUser SOFTAP init...\n"); 
 
