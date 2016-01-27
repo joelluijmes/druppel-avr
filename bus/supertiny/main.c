@@ -64,20 +64,22 @@ static uint8_t flush_eeprom()
 
 int main()
 {
-	_wdt_enable(WDTO_30MS);
-	//write_eeprom_uint16(EEPROM_BEGIN_ADDR, EEPROM_DEFAULT_ADDR);
-	//_delay_ms(50);
-	//
-	//write_eeprom_uint16(EEPROM_END_ADDR, EEPROM_DEFAULT_ADDR);
-	//_delay_ms(50);
+	write_eeprom_uint16(EEPROM_BEGIN_ADDR, EEPROM_DEFAULT_ADDR);
+	_delay_ms(50);
 	
+	write_eeprom_uint16(EEPROM_END_ADDR, EEPROM_DEFAULT_ADDR);
+	_delay_ms(50);
+
 	uint16_t addr = read_eeprom_uint16(EEPROM_END_ADDR);
 	uint8_t data[BUF_LEN];
 
+	_wdt_enable(WDTO_60MS);
 	while (1)
 	{
 		communication_available();											// trigger communication (to get active i.e.)
 		uint8_t len = sensor_fill(data, BUF_LEN);
+		if (len == 0)	// todo wait
+			continue;
 
 		eeprom_write(addr, data, len);
 		_delay_ms(5);
