@@ -28,7 +28,7 @@ int main()
 	while (1)
 	{
 		idp_process(data, BUF_LEN);
-		asm volatile("nop");
+
 		// TODO: Sleep
 	}
 }

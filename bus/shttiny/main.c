@@ -1,38 +1,43 @@
 #include <avr/io.h>
-#include <util/delay.h>
 #include <avr/interrupt.h>
 
-#include "../../util/twi/twi.h"
+#include "idp_slave.h"
 #include "../../util/sht15/sht.h"
+#include "../../util/pin.h"
 
-#define SLAVE_ADDR 0x16
-
-typedef enum state state;
-enum state
-{
-	STATE_IDLE,
-	STATE_MEASURING,
-	STATE_SENDING,
-	STATE_COMPLETED, 
-	STATE_FAILED
-};
-
-typedef enum command command;
-enum command
-{
-	COMMAND_REQUEST_MEASUREMENT,
-	COMMAND_OK
-};
-
-
-static state receive_request();
-static uint8_t measure(uint8_t* data, uint8_t datalen);
-static state send_ready();
-static state send_data(uint8_t* data, uint8_t datalen);
+#define BUF_LEN 64
+#define DATA_NUM 1
 
 static sht* _sht;
 
-int main()
+static uint8_t measure_1(uint8_t* data, uint8_t len)
+{
+	*(uint32_t*)data = 0x11111111;
+	return 4;
+	if (len < sizeof(double))
+	return 0;
+
+	double temp = sht_readTemperature(_sht);
+	*(double*)data = temp;
+
+	return sizeof(double);
+}
+
+static uint8_t measure_2(uint8_t* data, uint8_t len)
+{
+*(uint32_t*)data = 0x22222222;
+return 4;
+	if (len < sizeof(double))
+		return 0;
+
+	double temp = sht_readTemperature(_sht);
+	double humi = sht_compensateHumidity(_sht, temp);
+	*(double*)data = humi;
+
+	return sizeof(double);
+}
+
+static void init()
 {
 	pin sck =
 	{
@@ -49,76 +54,27 @@ int main()
 		.mask = 1 << 3
 	};
 
-	sht sht =
+	sht s =
 	{
 		.pinSCK = sck,
 		.pinDATA = pinData
 	};
-	_sht = &sht;
+	_sht = &s;
+}
 
-	pin_output(&sck);
-	pin_output(&pinData);
+int main()
+{
+	init();
 
-	volatile state state = STATE_IDLE;
-	uint8_t data[16];
-	uint8_t len = 0;
-
+	uint8_t data[BUF_LEN];
+	uint8_t addresses[] = { 1, 2 };
+	measure_t measures[] = { &measure_1, &measure_2 };
+	
+	idp_init(addresses, measures);
 	while (1)
-	{ 
-		switch (state)
-		{
-		case STATE_IDLE:
-			state = receive_request();
-			break;
-		case STATE_MEASURING:
-			len = measure(data, 64);
-			state = send_ready();
-			break;
-		case STATE_SENDING:
-			state = send_data(data, len);
-			break;
-		case STATE_COMPLETED:
-			state = STATE_IDLE;
-			break;
-		case STATE_FAILED:
-			break;
-		}
+	{
+		idp_process(data, BUF_LEN);
+
+		// TODO: Sleep
 	}
-}
-
-static state receive_request()
-{
-	uint8_t cmd;
-	return (twi_slave_receive_byte(SLAVE_ADDR, &cmd) == TWST_OK && cmd == COMMAND_REQUEST_MEASUREMENT)
-		? STATE_MEASURING
-		: STATE_FAILED;
-}
-
-static uint8_t measure(uint8_t* data, uint8_t datalen)
-{
-	double tmp = sht_readTemperature(_sht);
-	*((double*)data) = tmp;
-	return sizeof(double);
-}
-
-static state send_ready()
-{
-	// TODO: Add command that it failed?
-	if (twi_slave_send_byte(SLAVE_ADDR, COMMAND_OK) != TWST_OK)
-		return STATE_FAILED;
-
-	uint8_t cmd;
-	return (twi_slave_receive_byte(SLAVE_ADDR, &cmd) == TWST_OK && cmd == COMMAND_OK)
-		? STATE_SENDING
-		: STATE_FAILED;
-}
-
-static state send_data(uint8_t* data, uint8_t datalen)
-{
-	if (twi_slave_send_byte(SLAVE_ADDR, datalen) != TWST_OK)
-		return STATE_FAILED;
-
-	return (twi_slave_send(SLAVE_ADDR, data, &datalen) == TWST_OK)
-		? STATE_COMPLETED
-		: STATE_FAILED;
 }
