@@ -17,6 +17,7 @@
 
 #include "user_global_definitions.h"
 
+#define WD_MAX_FAILED 3
 
 static struct espconn esp_conn;                                         // Holding the tcp connection
 static esp_tcp esptcp;
@@ -24,7 +25,9 @@ static esp_tcp esptcp;
 static bool DISCONNECT_AFTER_SENT;                                      // Close tcp connection after send callback
 static state tcp_state;                                                 // TCP connection state
 static volatile os_timer_t wdtimer;
-static uint8_t esp_conn_wd_state; 
+static uint8_t esp_conn_wd_state;
+static uint8_t wd_conn_state; 
+static uint8_t wd_failed; 
 
 
 static void tcpclient_recv_cb(void *arg, char *data, unsigned short length);
@@ -172,18 +175,24 @@ tcpclient_check_state(void)
 {
     if(tcp_state == STATE_BUSY && esp_conn_wd_state == ESPCONN_WRITE && esp_conn.state == ESPCONN_WRITE) 
     {
-
-        DEBUG_0(os_printf("TCP: check_state, disconnect\n"));
-        tcpclient_update_state(STATE_DISCONNECT); 
-        //os_printf("tcp state: %d %d %d \n", esp_conn.state, ESPCONN_CLOSE, tcpclient_get_state());
+        wd_failed++; 
+        if(wd_failed >= WD_MAX_FAILED) {
+            DEBUG_0(os_printf("TCP: check_state, disconnect\n"));
+            tcpclient_update_state(STATE_DISCONNECT); 
+            //os_printf("tcp state: %d %d %d \n", esp_conn.state, ESPCONN_CLOSE, tcpclient_get_state());
+        }
+    } else {
+        wd_failed = 0; 
     }
 
-    esp_conn_wd_state = esp_conn.state; 
+    esp_conn_wd_state = esp_conn.state;
+    wd_conn_state = esp_conn.state; 
 }
 
 static void ICACHE_FLASH_ATTR 
 tcpclient_wd_timer(void)
 {
+    wd_failed = 0;                                                      // Reset failed count
     //Disarm timer
     os_timer_disarm(&wdtimer);
 
@@ -194,5 +203,5 @@ tcpclient_wd_timer(void)
     //&some_timer is the pointer
     //500 is the fire time in ms
     //0 for once and 1 for repeating
-    os_timer_arm(&wdtimer, 500, 1);
+    os_timer_arm(&wdtimer, 200, 1);
 }
