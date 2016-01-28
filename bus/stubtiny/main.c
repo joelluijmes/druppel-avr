@@ -8,13 +8,13 @@
 
 static uint8_t measure_1(uint8_t* data, uint8_t len)
 {
-	*(uint32_t*)data = 0x01;
+	*(uint32_t*)data = 0x11111111;
 	return 4;
 }
 
 static uint8_t measure_2(uint8_t* data, uint8_t len)
 {
-	*(uint32_t*)data = 0x02;
+	*(uint32_t*)data = 0x22222222;
 	return 4;
 }
 
