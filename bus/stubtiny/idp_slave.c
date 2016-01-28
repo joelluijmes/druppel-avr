@@ -1,5 +1,7 @@
 #include "idp_slave.h"
 
+#define BUF_LEN 16
+
 typedef enum state state;
 enum state
 {
@@ -12,6 +14,7 @@ enum state
 
 static uint8_t _addresses[I2C_ADDRLEN];
 static measure_t _measure[I2C_ADDRLEN];
+static state _states[I2C_ADDRLEN];
 
 static state handle_device(uint8_t slave_addr, measure_t measure, uint8_t* data, uint8_t datalen, uint8_t* len);
 static state receive_request(uint8_t slave_addr);
@@ -35,42 +38,30 @@ static state send_data(uint8_t slave_addr, uint8_t* data, uint8_t datalen);
 	}
 #endif
 
-void idp_process(uint8_t* data, uint8_t data_len)
+void idp_process()
 {
-	uint8_t len = 0;
-
+	static uint8_t lens[I2C_ADDRLEN];
+	static uint8_t buffers[I2C_ADDRLEN][BUF_LEN];								// not efficient :X
 	for (uint8_t i = 0; i < I2C_ADDRLEN; ++i)
-	{
-		uint8_t l = 0;
-		handle_device(_addresses[i], _measure[i], data + len, data_len - len, &l);
-
-		len += l;
-	}
+		_states[i] = handle_device(_addresses[i], _states[i], _measure[i], buffers[i], BUF_LEN, &lens[i]);
 }
 
-static state handle_device(uint8_t slave_addr, measure_t measure, uint8_t* data, uint8_t datalen, uint8_t* len)
+static state handle_device(uint8_t slave_addr, state state, measure_t measure, uint8_t* data, uint8_t datalen, uint8_t* len)
 {
-	state _state = STATE_IDLE;
-	while (1)
+	switch (p_state)
 	{
-		switch (_state)
-		{
 		case STATE_FAILED:
 		case STATE_COMPLETED:
-			return _state;
+			return STATE_IDLE;													// ??
 		case STATE_IDLE:
-			_state = receive_request(slave_addr);
-			break;
+			return receive_request(slave_addr);
 		case STATE_MEASURING:
 		{
 			*len = measure(data, datalen);
-			_state = send_ready(slave_addr);
-			break;
+			return send_ready(slave_addr);
 		}
 		case STATE_SENDING:
-			_state = send_data(slave_addr, data, *len);
-			break;
-		}
+			return send_data(slave_addr, data, *len);
 	}
 }
 
