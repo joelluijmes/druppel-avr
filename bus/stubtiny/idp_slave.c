@@ -16,7 +16,7 @@ static uint8_t _addresses[I2C_ADDRLEN];
 static measure_t _measure[I2C_ADDRLEN];
 static state _states[I2C_ADDRLEN];
 
-static state handle_device(uint8_t slave_addr, measure_t measure, uint8_t* data, uint8_t datalen, uint8_t* len);
+static state handle_device(uint8_t slave_addr, state state, measure_t measure, uint8_t* data, uint8_t datalen, uint8_t* len);
 static state receive_request(uint8_t slave_addr);
 static state send_ready(uint8_t slave_addr);
 static state send_data(uint8_t slave_addr, uint8_t* data, uint8_t datalen);
@@ -48,7 +48,8 @@ void idp_process()
 
 static state handle_device(uint8_t slave_addr, state state, measure_t measure, uint8_t* data, uint8_t datalen, uint8_t* len)
 {
-	switch (p_state)
+	_wdt_reset();
+	switch (state)
 	{
 		case STATE_FAILED:
 		case STATE_COMPLETED:
@@ -63,6 +64,8 @@ static state handle_device(uint8_t slave_addr, state state, measure_t measure, u
 		case STATE_SENDING:
 			return send_data(slave_addr, data, *len);
 	}
+
+	return state;
 }
 
 static state receive_request(uint8_t slave_addr)
