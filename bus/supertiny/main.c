@@ -35,14 +35,14 @@ static uint8_t flush_eeprom()
 	uint16_t beginAddess = read_eeprom_uint16(EEPROM_BEGIN_ADDR);
 	uint16_t endAddress = read_eeprom_uint16(EEPROM_END_ADDR);
 
-	if (beginAddess == 0xFFFF || endAddress == 0xFFFF || endAddress < beginAddess)
-	{
-		write_eeprom_uint16(EEPROM_BEGIN_ADDR, EEPROM_DEFAULT_ADDR);
-		_delay_ms(50);
-		
-		write_eeprom_uint16(EEPROM_END_ADDR, EEPROM_DEFAULT_ADDR);
-		_delay_ms(50);
-	}
+	//if (beginAddess == 0xFFFF || endAddress == 0xFFFF || endAddress < beginAddess)
+	//{
+		//write_eeprom_uint16(EEPROM_BEGIN_ADDR, EEPROM_DEFAULT_ADDR);
+		//_delay_ms(50);
+		//
+		//write_eeprom_uint16(EEPROM_END_ADDR, EEPROM_DEFAULT_ADDR);
+		//_delay_ms(50);
+	//}
 
 	uint8_t buf[BUF_LEN];
 	uint16_t currentAddress = beginAddess;
@@ -69,6 +69,12 @@ static uint8_t flush_eeprom()
 		write_eeprom_uint16(EEPROM_BEGIN_ADDR, currentAddress);
 		_delay_ms(5);
 	}
+
+	write_eeprom_uint16(EEPROM_BEGIN_ADDR, EEPROM_DEFAULT_ADDR);
+	_delay_ms(50);
+	
+	write_eeprom_uint16(EEPROM_END_ADDR, EEPROM_DEFAULT_ADDR);
+	_delay_ms(50);
 
 	return 1;
 }
