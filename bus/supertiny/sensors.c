@@ -55,7 +55,7 @@ uint8_t sensor_fill(uint8_t* data, uint8_t datalen)
 			switch (*p_state)
 			{
 			case STATE_FAILED:											// It failed at some point so we start over
-				completed = 0;
+				//completed = 0;
 			case STATE_COMPLETED:										// Already completed this sensor
 				continue;
 			case STATE_NOT_ATTEMPTED:									// It's not yet attempted 
