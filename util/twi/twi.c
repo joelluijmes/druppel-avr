@@ -49,6 +49,7 @@ TWRESULT twi_master_send(uint8_t slaveaddr, uint8_t* buffer, uint8_t len, uint8_
 	}
 
 	for (uint8_t i = 0; i < len; ++i)
+	
 		MASTER_WRITE(buffer[i]);
 
 	if (!keepAlive)

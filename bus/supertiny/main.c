@@ -35,15 +35,6 @@ static uint8_t flush_eeprom()
 	uint16_t beginAddess = read_eeprom_uint16(EEPROM_BEGIN_ADDR);
 	uint16_t endAddress = read_eeprom_uint16(EEPROM_END_ADDR);
 
-	//if (beginAddess == 0xFFFF || endAddress == 0xFFFF || endAddress < beginAddess)
-	//{
-		//write_eeprom_uint16(EEPROM_BEGIN_ADDR, EEPROM_DEFAULT_ADDR);
-		//_delay_ms(50);
-		//
-		//write_eeprom_uint16(EEPROM_END_ADDR, EEPROM_DEFAULT_ADDR);
-		//_delay_ms(50);
-	//}
-
 	uint8_t buf[BUF_LEN];
 	uint16_t currentAddress = beginAddess;
 	while (currentAddress < endAddress)
@@ -70,6 +61,7 @@ static uint8_t flush_eeprom()
 		_delay_ms(5);
 	}
 
+	_wdt_reset();
 	write_eeprom_uint16(EEPROM_BEGIN_ADDR, EEPROM_DEFAULT_ADDR);
 	_delay_ms(50);
 	
@@ -81,15 +73,16 @@ static uint8_t flush_eeprom()
 
 int main()
 {
+	_wdt_disable();														// don't reset while we are setting up
 	write_eeprom_uint16(EEPROM_BEGIN_ADDR, EEPROM_DEFAULT_ADDR);
 	_delay_ms(50);
 	
 	write_eeprom_uint16(EEPROM_END_ADDR, EEPROM_DEFAULT_ADDR);
 	_delay_ms(50);
 
-	uint8_t data[BUF_LEN];
+	uint8_t data[BUF_LEN] = {1};
 
-	_wdt_enable(WDTO_60MS);
+	_wdt_enable(WDTO_1S);												// timeout
 	communication_available();											// trigger communication (to get active i.e.)
 	
 	while (1)
@@ -108,7 +101,7 @@ int main()
 
 		_delay_ms(10);
 		_wdt_reset();
-		//if (addr > 10)
+	
 		if (communication_available())
 			flush_eeprom();
 	}
