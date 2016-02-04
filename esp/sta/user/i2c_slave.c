@@ -49,7 +49,8 @@ i2c_slave_init(void)
 
     GPIO_OUTPUT_SET(3, 1);                                          // Set gpio 3 to output high, so i2c bus can connect
 
-    DEBUG_1(user_i2c_debug());
+    // dissable todo reset if not responding...
+    //DEBUG_1(user_i2c_debug());
 
     i2c_update_status(I2C_READING_START);                           // Starting reading
     ETS_GPIO_INTR_ENABLE();                                         // Enable gpio interrupts
@@ -291,6 +292,7 @@ i2c_slave_reading_start() {
 static void ICACHE_FLASH_ATTR 
 user_i2c_debug(void)
 {
+    os_printf("I2C: Debug on\n"); 
     //Disarm timer
     os_timer_disarm(&timer1);
 
