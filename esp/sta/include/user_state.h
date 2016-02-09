@@ -1,6 +1,8 @@
 #ifndef __USER_STATE_H__
 #define __USER_STATE_H__
 
+#include "user_sta.h"
+
 #define CLOSE 0
 #define KEEP_ALIVE 1
 

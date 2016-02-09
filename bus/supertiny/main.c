@@ -63,10 +63,10 @@ static uint8_t flush_eeprom()
 
 	_wdt_reset();
 	write_eeprom_uint16(EEPROM_BEGIN_ADDR, EEPROM_DEFAULT_ADDR);
-	_delay_ms(50);
+	_delay_ms(5);
 	
 	write_eeprom_uint16(EEPROM_END_ADDR, EEPROM_DEFAULT_ADDR);
-	_delay_ms(50);
+	_delay_ms(5);
 
 	return 1;
 }

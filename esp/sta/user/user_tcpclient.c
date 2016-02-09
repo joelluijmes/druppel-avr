@@ -17,7 +17,7 @@
 
 #include "user_global_definitions.h"
 
-#define WD_MAX_FAILED 3
+#define WD_MAX_FAILED 4
 
 static struct espconn esp_conn;                                         // Holding the tcp connection
 static esp_tcp esptcp;

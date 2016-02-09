@@ -18,6 +18,8 @@
 #include "user_state.h"
 #include "user_tcpclient.h"
 
+#include "hw_timer.c"
+
 #define READ_PIN(pin) (!!(PIN_IN & ( 1  << pin )))    // outputs 0 or 1
 #define I2C_READ_PIN(pin) (PIN_IN & ( 1  << pin ))
 #define I2C_SDA_SET(value) ((value > 0) ? (PIN_OUT_SET = 1 << SDA_PIN) : (PIN_OUT_CLEAR = 1 << SDA_PIN))
@@ -35,6 +37,7 @@ static void i2c_slave_reading_address();
 static void i2c_slave_writing_address();
 static void i2c_return_interrupt(); 
 static void user_i2c_debug(void);
+static void user_i2c_hw_timer(void);
 
 void ICACHE_FLASH_ATTR 
 i2c_slave_init(void)
@@ -49,10 +52,16 @@ i2c_slave_init(void)
 
     GPIO_OUTPUT_SET(3, 1);                                          // Set gpio 3 to output high, so i2c bus can connect
 
+    //temp
+    GPIO_OUTPUT_SET(2, 1); 
+
     // dissable todo reset if not responding...
-    //DEBUG_1(user_i2c_debug());
+    DEBUG_1(user_i2c_debug());
+
+    user_i2c_hw_timer(); 
 
     i2c_update_status(I2C_READING_START);                           // Starting reading
+
     ETS_GPIO_INTR_ENABLE();                                         // Enable gpio interrupts
 }
 
@@ -144,6 +153,11 @@ i2c_slave_reading_address() {
             } else {
                 i2c_update_status(I2C_WRITING_BYTES);
             }
+        } else {
+            //i2c_status == I2C_READING_BYTES
+            GPIO_OUTPUT_SET(2, 0);               // TODO: remove temp    
+            hw_timer_arm(20);   // ~22us
+            //RTC_REG_WRITE(FRC1_LOAD_ADDRESS, 150);
         }
 
         while(I2C_READ_PIN(SCL_PIN));               // Wait till SCL is low
@@ -154,6 +168,7 @@ i2c_slave_reading_address() {
         while(I2C_READ_PIN(SCL_PIN));               // Wait till SCL is low
         PIN_DIR_INPUT = 1 << SDA_PIN;               // ACK is sent so set pin direction to input
         gpio_output_set(0, 0, 0, GPIO_ID_PIN(SDA_PIN));
+        GPIO_OUTPUT_SET(2, 1);               // TODO: remove temp   
 
         if(i2c_byte_number >= 0)
             i2c_byte_buffer[i2c_byte_number] = i2c_buffer;      // Save received data
@@ -172,7 +187,7 @@ i2c_slave_reading_address() {
         if(i2c_byte_number > 0 && i2c_byte_number >= i2c_byte_buffer[0]) 
         {
             // Sending bytes ?
-            os_printf("Received %d bytes\n", i2c_byte_number); 
+            //os_printf("Received %d bytes\n", i2c_byte_number); 
 
             if(tcpclient_get_state() == STATE_CONNECTED)
                 tcpclient_send_data(&i2c_byte_buffer[1], i2c_byte_number, KEEP_ALIVE); 
@@ -213,7 +228,7 @@ i2c_slave_writing_address()
             DEBUG_2(os_printf("Writing status done, received nack from master\n"));
             return; 
         } else {
-            i2c_bit_number == 7;                            // Received ACK
+            i2c_bit_number = 7;                            // Received ACK
             DEBUG_2(os_printf("Received ack? writing status is 1 byte\n"));
 
             i2c_update_status(I2C_READING_START);           // Received NACK
@@ -264,17 +279,6 @@ print_debug_info(void *arg)
     ETS_GPIO_INTR_ENABLE();
 }
 
-void ICACHE_FLASH_ATTR
-i2c_soft_wd(void *arg)
-{
-    PIN_DIR_INPUT = 1 << SDA_PIN; 
-    gpio_output_set(0, 0, 0, GPIO_ID_PIN(SDA_PIN));
-
-    ETS_GPIO_INTR_DISABLE(); // Disable gpio interrupts
-    i2c_update_status(I2C_READING_START);
-    ETS_GPIO_INTR_ENABLE();
-}
-
 // Important to keep this function at this position...
 // Otherwise switching interrupts is to late... 
 static void ICACHE_FLASH_ATTR
@@ -293,15 +297,46 @@ static void ICACHE_FLASH_ATTR
 user_i2c_debug(void)
 {
     os_printf("I2C: Debug on\n"); 
-    //Disarm timer
-    os_timer_disarm(&timer1);
-
-    //Setup timer
-    os_timer_setfn(&timer1, (os_timer_func_t *)i2c_soft_wd, NULL);
 
     //Arm the timer
     //&some_timer is the pointer
     //1000 is the fire time in ms
     //0 for once and 1 for repeating
-    os_timer_arm(&timer1, 100, 1);
+    os_timer_arm(&timer1, 1000, 1);
+
+    Setup hw timer
+    hw_timer_init(FRC1_SOURCE,1);
+    hw_timer_set_func(i2c_soft_wd);
+    hw_timer_arm(100000); //0.1sec
+}
+
+static void i2c_hw_test_timer_cb(void)
+{
+    GPIO_OUTPUT_SET(2, 1);
+    if((PIN_DIR & (1 << SDA_PIN)) != 0)                 // Pin is set as output, brackets all needed!
+    {
+        os_printf("I2C: What's happing? \n");
+        PIN_DIR_INPUT = 1 << SDA_PIN; 
+        gpio_output_set(0, 0, 0, GPIO_ID_PIN(SDA_PIN)); 
+
+        ETS_GPIO_INTR_DISABLE(); 
+        i2c_update_status(I2C_READING_START); 
+        ETS_GPIO_INTR_ENABLE(); 
+        RTC_REG_WRITE(FRC1_LOAD_ADDRESS, 1000000); 
+    }
+}
+
+static void ICACHE_FLASH_ATTR
+user_i2c_hw_timer(void)
+{
+    os_printf("I2C: hw timer on \n");
+    RTC_REG_WRITE(FRC1_CTRL_ADDRESS,
+          DIVDED_BY_16 | FRC1_ENABLE_TIMER | TM_EDGE_INT);
+
+    ETS_FRC_TIMER1_INTR_ATTACH(i2c_hw_test_timer_cb, NULL);
+
+    TM1_EDGE_INT_ENABLE();
+    ETS_FRC1_INTR_ENABLE();
+
+    hw_timer_arm(1000000); // 1 sec
 }

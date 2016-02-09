@@ -15,7 +15,7 @@ extern volatile uint32_t PIN_0;
 extern volatile uint32_t PIN_2;
 
 #define DEBUG_LEVEL0
-#define DEBUG_LEVEL1
+//#define DEBUG_LEVEL1
 
 #ifdef DEBUG_LEVEL0
     #define DEBUG_0( func__ ) ( func__ )
