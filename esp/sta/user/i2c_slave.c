@@ -153,11 +153,9 @@ i2c_slave_reading_address() {
             } else {
                 i2c_update_status(I2C_WRITING_BYTES);
             }
-        } else {
-            //i2c_status == I2C_READING_BYTES
-            GPIO_OUTPUT_SET(2, 0);               // TODO: remove temp    
-            hw_timer_arm(20);   // ~22us
-            //RTC_REG_WRITE(FRC1_LOAD_ADDRESS, 150);
+        } else {                                    // i2c_status == I2C_READING_BYTES
+            GPIO_OUTPUT_SET(2, 0);                  // TODO: remove temp    
+            RTC_REG_WRITE(FRC1_LOAD_ADDRESS, 100);  // trigger hw timer at ~20 - 22 us
         }
 
         while(I2C_READ_PIN(SCL_PIN));               // Wait till SCL is low
@@ -168,7 +166,7 @@ i2c_slave_reading_address() {
         while(I2C_READ_PIN(SCL_PIN));               // Wait till SCL is low
         PIN_DIR_INPUT = 1 << SDA_PIN;               // ACK is sent so set pin direction to input
         gpio_output_set(0, 0, 0, GPIO_ID_PIN(SDA_PIN));
-        GPIO_OUTPUT_SET(2, 1);               // TODO: remove temp   
+        GPIO_OUTPUT_SET(2, 1);                      // TODO: remove temp   
 
         if(i2c_byte_number >= 0)
             i2c_byte_buffer[i2c_byte_number] = i2c_buffer;      // Save received data
@@ -176,7 +174,7 @@ i2c_slave_reading_address() {
 
         if(i2c_byte_number == 1 && i2c_byte_buffer[0] == 255)               // Received command... 
         {
-            tcpclient_update_state(i2c_byte_buffer[1]);
+            tcpclient_update_state(i2c_byte_buffer[1]);                     // Try connect if possible
 
             os_delay_us(5000);
 
@@ -221,23 +219,18 @@ i2c_slave_writing_address()
         while(!I2C_READ_PIN(SCL_PIN));                      // Wait until SCL become high
 
         if(I2C_READ_PIN(SDA_PIN) > 0) {
-            tcpclient_update_state(STATE_CONNECT);
+            tcpclient_update_state(STATE_CONNECT);          // Try connect if possible
 
             i2c_update_status(I2C_READING_START);           // Received NACK
-            i2c_return_interrupt(); 
-            DEBUG_2(os_printf("Writing status done, received nack from master\n"));
-            return; 
+            DEBUG_2(os_printf("I2C: Writing status done, received nack from master\n"));
         } else {
-            i2c_bit_number = 7;                            // Received ACK
-            DEBUG_2(os_printf("Received ack? writing status is 1 byte\n"));
+            DEBUG_2(os_printf("I2C: Received ack? writing status is 1 byte\n"));
 
             i2c_update_status(I2C_READING_START);           // Received NACK
-            i2c_return_interrupt(); 
         }
     }
 
     i2c_bit_number--;
-
     i2c_return_interrupt(); 
 }
 
@@ -298,31 +291,32 @@ user_i2c_debug(void)
 {
     os_printf("I2C: Debug on\n"); 
 
+    //Disarm timer
+    os_timer_disarm(&timer1);
+
+    //Setup timer
+    os_timer_setfn(&timer1, (os_timer_func_t *)print_debug_info, NULL);
+
     //Arm the timer
     //&some_timer is the pointer
     //1000 is the fire time in ms
     //0 for once and 1 for repeating
     os_timer_arm(&timer1, 1000, 1);
-
-    Setup hw timer
-    hw_timer_init(FRC1_SOURCE,1);
-    hw_timer_set_func(i2c_soft_wd);
-    hw_timer_arm(100000); //0.1sec
 }
 
 static void i2c_hw_test_timer_cb(void)
 {
     GPIO_OUTPUT_SET(2, 1);
-    if((PIN_DIR & (1 << SDA_PIN)) != 0)                 // Pin is set as output, brackets all needed!
+    if((PIN_DIR & (1 << SDA_PIN)) != 0)                             // Pin is set as output, brackets all needed!
     {
-        os_printf("I2C: What's happing? \n");
+        DEBUG_1(os_printf("I2C: incorrect timing, set sda to input and update status to reading \n"));
         PIN_DIR_INPUT = 1 << SDA_PIN; 
         gpio_output_set(0, 0, 0, GPIO_ID_PIN(SDA_PIN)); 
 
         ETS_GPIO_INTR_DISABLE(); 
         i2c_update_status(I2C_READING_START); 
         ETS_GPIO_INTR_ENABLE(); 
-        RTC_REG_WRITE(FRC1_LOAD_ADDRESS, 1000000); 
+        RTC_REG_WRITE(FRC1_LOAD_ADDRESS, 5000000);                  // Maximum delay, ~1,66 sec with prescaler of 16
     }
 }
 
@@ -331,12 +325,12 @@ user_i2c_hw_timer(void)
 {
     os_printf("I2C: hw timer on \n");
     RTC_REG_WRITE(FRC1_CTRL_ADDRESS,
-          DIVDED_BY_16 | FRC1_ENABLE_TIMER | TM_EDGE_INT);
+          DIVDED_BY_16 | FRC1_ENABLE_TIMER | TM_EDGE_INT);          // Enable hw timer with prescaler of 16
 
-    ETS_FRC_TIMER1_INTR_ATTACH(i2c_hw_test_timer_cb, NULL);
+    ETS_FRC_TIMER1_INTR_ATTACH(i2c_hw_test_timer_cb, NULL);         // Register callback function
 
-    TM1_EDGE_INT_ENABLE();
-    ETS_FRC1_INTR_ENABLE();
+    TM1_EDGE_INT_ENABLE();                                          // Enable interrupt on edge
+    ETS_FRC1_INTR_ENABLE();                                         // Enable timer interrupt
 
-    hw_timer_arm(1000000); // 1 sec
+    hw_timer_arm(0x7fffff);                                         // Maximum delay, ~1,66 sec with prescaler of 16
 }
