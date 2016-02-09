@@ -48,13 +48,23 @@ TWRESULT twi_master_send(uint8_t slaveaddr, uint8_t* buffer, uint8_t len, uint8_
 		_state &= ~CLOSED;
 	}
 
+	uint8_t nacked = 0;
 	for (uint8_t i = 0; i < len; ++i)
-		MASTER_WRITE(buffer[i]);
+	{
+		uint8_t ack = MASTER_WRITE(buffer[i]);
+		if (!ack)
+		{
+			nacked = 1;
+			break;
+		}
+	}
 
 	if (!keepAlive)
 		twi_close();
 
-	return TWST_OK;
+	return (nacked)
+		? TWST_PARTIAL_TRANSMIT
+		: TWST_OK;
 }
 
 TWRESULT twi_slave_send(uint8_t slaveaddr, uint8_t* buffer, uint8_t* len)

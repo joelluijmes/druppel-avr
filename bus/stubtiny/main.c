@@ -1,93 +1,37 @@
 #include <avr/io.h>
-#include <util/delay.h>
 #include <avr/interrupt.h>
+#include <util/delay.h>
+#include <avr/wdt.h>
 
-#include "../../util/twi/twi.h"
+#include "idp_slave.h"
+#include "..\..\util\wdt.h"
+#include "..\..\util\led.h"
 
-#define SLAVE_ADDR 0x11
-
-typedef enum state state;
-enum state
+static uint8_t measure_1(uint8_t* data, uint8_t len)
 {
-	STATE_IDLE,
-	STATE_MEASURING,
-	STATE_SENDING,
-	STATE_COMPLETED, 
-	STATE_FAILED
-};
-
-typedef enum command command;
-enum command
-{
-	COMMAND_REQUEST_MEASUREMENT,
-	COMMAND_OK
-};
-
-static state receive_request();
-static uint8_t measure(uint8_t* data, uint8_t datalen);
-static state send_ready();
-static state send_data(uint8_t* data, uint8_t datalen);
-
-int main()
-{
-	volatile state state = STATE_IDLE;
-	uint8_t data[16];
-	uint8_t len = 0;
-
-	while (1)
-	{ 
-		switch (state)
-		{
-		case STATE_FAILED:	// start over when we fail
-		case STATE_IDLE:
-			state = receive_request();
-			break;
-		case STATE_MEASURING:
-			len = measure(data, 64);
-			state = send_ready();
-			break;
-		case STATE_SENDING:
-			state = send_data(data, len);
-			break;
-		case STATE_COMPLETED:
-			state = STATE_IDLE;
-			break;
-		}
-	}
-}
-
-static state receive_request()
-{
-	uint8_t cmd;
-	return (twi_slave_receive_byte(SLAVE_ADDR, &cmd) == TWST_OK && cmd == COMMAND_REQUEST_MEASUREMENT)
-		? STATE_MEASURING
-		: STATE_FAILED;
-}
-
-static uint8_t measure(uint8_t* data, uint8_t datalen)
-{
-	*((uint32_t*)data) = 0xDEADBEEF;
+	*(uint32_t*)data = 0x11111111;
 	return 4;
 }
 
-static state send_ready()
+static uint8_t measure_2(uint8_t* data, uint8_t len)
 {
-	// TODO: Add command that it failed?
-	if (twi_slave_send_byte(SLAVE_ADDR, COMMAND_OK) != TWST_OK)
-		return STATE_FAILED;
-
-	uint8_t cmd;
-	return (twi_slave_receive_byte(SLAVE_ADDR, &cmd) == TWST_OK && cmd == COMMAND_OK)
-		? STATE_SENDING
-		: STATE_FAILED;
+	*(uint32_t*)data = 0x22222222;
+	return 4;
 }
 
-static state send_data(uint8_t* data, uint8_t datalen)
+int main()
 {
-	if (twi_slave_send_byte(SLAVE_ADDR, datalen) != TWST_OK)
-		return STATE_FAILED;
+	_wdt_disable();
+	uint8_t addresses[] = { 1, 2 };
+	measure_t measures[] = { &measure_1, &measure_2 };
+	
+	idp_init(addresses, measures);
 
-	return (twi_slave_send(SLAVE_ADDR, data, &datalen) == TWST_OK)
-		? STATE_COMPLETED
-		: STATE_FAILED;
+	_wdt_enable(WDTO_4S);
+	while (1)
+	{
+		idp_process();
+
+		// TODO: Sleep
+	}
 }

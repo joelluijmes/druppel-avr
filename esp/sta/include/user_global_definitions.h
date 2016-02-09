@@ -14,9 +14,23 @@ extern volatile uint32_t PIN_IN;
 extern volatile uint32_t PIN_0;
 extern volatile uint32_t PIN_2;
 
-// extern volatile uint8_t wifi_status; 
+#define DEBUG_LEVEL0
+//#define DEBUG_LEVEL1
 
-// #define WIFI_BUSY 0x01
-// #define WIFI_READY 0x02
+#ifdef DEBUG_LEVEL0
+    #define DEBUG_0( func__ ) ( func__ )
+#else
+    #define DEBUG_0( func__ )
+#endif
+#ifdef DEBUG_LEVEL1
+    #define DEBUG_1( func__ ) ( func__ )
+#else
+    #define DEBUG_1( func__ )
+#endif
+#ifdef DEBUG_LEVEL2
+    #define DEBUG_2( func__ ) ( func__ )
+#else
+    #define DEBUG_2( func__ )
+#endif
 
 #endif

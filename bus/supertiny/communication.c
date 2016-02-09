@@ -1,6 +1,6 @@
 #include "communication.h"
 
-#define I2C_ADDR_ESP8266 0x01
+#define I2C_ADDR_ESP8266 0x10
 
 enum tcp_state
 {

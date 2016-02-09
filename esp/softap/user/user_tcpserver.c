@@ -13,7 +13,6 @@
 #include "user_tcpserver.h"
 #include "espconn.h"
 
-
 LOCAL struct espconn esp_conn;
 LOCAL esp_tcp esptcp;
 
@@ -35,7 +34,9 @@ tcpserver_recv_cb(void *arg, char *data, unsigned short length)
     {
         // Received data wich is probably right 
         // TODO check data
-        uart0_sendStr(data); 
+        //uart0_sendStr(data); 
+
+        uart0_tx_buffer(data, length);              // string will not send 0x00
     }
 }
 

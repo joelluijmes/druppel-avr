@@ -1,7 +1,6 @@
 #include <avr/io.h>
 #include <util/delay.h>
 
-#include "../uart/uart.h"
 #include "../pin.h"
 #include "sht.h"
 

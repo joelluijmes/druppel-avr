@@ -2,8 +2,8 @@
 
 #define SENSORS_RECEIVE_BUFFER_SIZE 0x10
 
-#define SENSORS_ADDRESS_START 0x11
-#define SENSORS_ADDRESS_END 0x11
+#define SENSORS_ADDRESS_START 1
+#define SENSORS_ADDRESS_END 2
 #define SENSORS_ADDRESS_LEN (SENSORS_ADDRESS_END - SENSORS_ADDRESS_START + 1)
 
 #define DATA_HEADER_LEN  6
@@ -32,26 +32,32 @@ static state request_measurement(uint8_t slave_address);
 static state sensor_ready(uint8_t slave_address);
 static int8_t read_sensor(uint8_t slave_address, uint8_t* buf, uint8_t len);
 
-uint8_t sensor_fill(uint32_t time, uint8_t* data, uint8_t datalen)
+uint8_t sensor_fill(uint8_t* data, uint8_t datalen)
 {
-	state _states[SENSORS_ADDRESS_LEN] = {0};
-	uint8_t offset = 0;
+	volatile state volatile _states[SENSORS_ADDRESS_LEN] = {0};
 
-	uint8_t completed = 0;												// 'dirty' flag, will be cleared by every sensor if their state has changed
+	uint8_t completed = 0, offset = 0;									// 'dirty' flag, will be cleared by every sensor if their state has changed
+	time_swreset();													
 	while (!completed)													// if not it indicates we checked all sensors
 	{
+		#if SENSOR_TIMEOUT > 0
+		volatile uint32_t elapsed = time_swelapsed();
+		if (elapsed > SENSOR_TIMEOUT)	
+			return offset;												// sensor stopped responding
+		#endif
+
 		completed = 1;
 		for (uint8_t address = SENSORS_ADDRESS_START; address <= SENSORS_ADDRESS_END; ++address)
 		{
-			_delay_ms(1);
-			state* p_state = _states + address - SENSORS_ADDRESS_START;	// The array starts at 0, the first address isn't gaurunteed to be at 0 tho
+			volatile state* p_state = _states + address - SENSORS_ADDRESS_START;	// The array starts at 0, the first address isn't gaurunteed to be at 0 tho
 																		// so for the correct array index we need to subtract the last address
 																		// (The addresses are sequential ;) )
 			switch (*p_state)
 			{
+			case STATE_FAILED:											// It failed at some point so we start over
+				//completed = 0;
 			case STATE_COMPLETED:										// Already completed this sensor
 				continue;
-			case STATE_FAILED:											// It failed at some point so we start over
 			case STATE_NOT_ATTEMPTED:									// It's not yet attempted 
 				*p_state = request_measurement(address); 
 				break;
@@ -64,7 +70,7 @@ uint8_t sensor_fill(uint32_t time, uint8_t* data, uint8_t datalen)
 				if (len > 0)											// completed with this sensor :D
 				{
 					data[offset] = address;								// Data format:
-					*((uint32_t*)(data + offset + 1)) = time;			// ID | TIME | DATA_LEN | DATA
+					*((uint32_t*)(data + offset + 1)) = time_swstart(); // ID | TIME | DATA_LEN | DATA
 					data[offset + sizeof(uint32_t) + 1] = len;
 
 					*p_state = STATE_COMPLETED;
@@ -82,6 +88,8 @@ uint8_t sensor_fill(uint32_t time, uint8_t* data, uint8_t datalen)
 				break;
 			}
 
+			_delay_ms(5);												// wait between devices 
+			_wdt_reset();
 			completed = 0;												// Something has changed
 		}
 	}

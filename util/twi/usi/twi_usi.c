@@ -24,7 +24,7 @@
 // Atmel stuff (AVR310)
 #define TWI_FAST_MODE
 
-#define SYS_CLK   4000.0  // [kHz]     12000 = 90khz, 14000 = 80 khz
+#define SYS_CLK   5000.0  // [kHz]     4000 = 120khz, 6000 = 90khz
 
 #ifdef TWI_FAST_MODE               // TWI FAST mode timing limits. SCL = 100-400kHz
 #define T2_TWI    ((SYS_CLK *1300) /1000000) +1 // >1,3us
@@ -36,8 +36,8 @@
 
 #define SET_USI_TO_SEND_ACK()                                                                          \
 {                                                                                                      \
-    SDA_OUTPUT();                                                       /* Set SDA as output */        \
     USIDR = 0;                                                          /* Prepare ACK */              \
+    SDA_OUTPUT();                                                       /* Set SDA as output */        \
     USISR = (1 << USIOIF | 1 << USIPF | 1 << USIDC | 0x0E << USICNT0);  /* Clear flags | count 1 bit*/ \
 }
 
