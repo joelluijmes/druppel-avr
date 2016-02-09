@@ -42,6 +42,8 @@ static void user_i2c_hw_timer(void);
 void ICACHE_FLASH_ATTR 
 i2c_slave_init(void)
 {
+    gpio_init(); 
+
     DEBUG_0(os_printf("I2C: init\n")); 
     PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0);            // SET GPIO function, not uart...
     PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_GPIO2);            // SET GPIO function, not uart...
@@ -52,8 +54,7 @@ i2c_slave_init(void)
 
     GPIO_OUTPUT_SET(3, 1);                                          // Set gpio 3 to output high, so i2c bus can connect
 
-    //temp
-    GPIO_OUTPUT_SET(2, 1); 
+    //GPIO_OUTPUT_SET(2, 1); 
 
     // dissable todo reset if not responding...
     DEBUG_1(user_i2c_debug());
@@ -154,7 +155,7 @@ i2c_slave_reading_address() {
                 i2c_update_status(I2C_WRITING_BYTES);
             }
         } else {                                    // i2c_status == I2C_READING_BYTES
-            GPIO_OUTPUT_SET(2, 0);                  // TODO: remove temp    
+            //GPIO_OUTPUT_SET(2, 0);                  // TODO: remove temp    
             RTC_REG_WRITE(FRC1_LOAD_ADDRESS, 100);  // trigger hw timer at ~20 - 22 us
         }
 
@@ -166,7 +167,7 @@ i2c_slave_reading_address() {
         while(I2C_READ_PIN(SCL_PIN));               // Wait till SCL is low
         PIN_DIR_INPUT = 1 << SDA_PIN;               // ACK is sent so set pin direction to input
         gpio_output_set(0, 0, 0, GPIO_ID_PIN(SDA_PIN));
-        GPIO_OUTPUT_SET(2, 1);                      // TODO: remove temp   
+        //GPIO_OUTPUT_SET(2, 1);                      // TODO: remove temp   
 
         if(i2c_byte_number >= 0)
             i2c_byte_buffer[i2c_byte_number] = i2c_buffer;      // Save received data
@@ -306,7 +307,7 @@ user_i2c_debug(void)
 
 static void i2c_hw_test_timer_cb(void)
 {
-    GPIO_OUTPUT_SET(2, 1);
+    //GPIO_OUTPUT_SET(2, 1);
     if((PIN_DIR & (1 << SDA_PIN)) != 0)                             // Pin is set as output, brackets all needed!
     {
         DEBUG_1(os_printf("I2C: incorrect timing, set sda to input and update status to reading \n"));
